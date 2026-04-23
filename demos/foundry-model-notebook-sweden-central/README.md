@@ -2,34 +2,37 @@
 
 ## Purpose
 
-Deploy an Azure AI Foundry-compatible model endpoint in **Sweden Central**, then run a notebook prompt against that deployment to validate end-to-end feasibility.
+Deploy an Azure AI Foundry-compatible model endpoint in **Sweden Central**, then validate end-to-end feasibility by running prompts against it — entirely from notebooks.
 
-## Components
+## Notebook journey
 
-- `infra/main.bicep` - minimal Azure OpenAI account + model deployment
-- `env/.env.example` - environment variable template
-- `notebooks/prompt_test.ipynb` - prompt execution against deployed model
-- `scripts/` - helper commands
-- `docs/architecture-notes.md` - assumptions and constraints
+The demo is driven by three numbered notebooks in `notebooks/`. Run them in order:
+
+| Notebook | What it does |
+|---|---|
+| `00_setup.ipynb` | Verify prerequisites, log in to Azure, install Python packages, create `.env` |
+| `01_deploy_infra.ipynb` | Create resource group and deploy Bicep template via Azure CLI; retrieve and save endpoint + key to `.env` |
+| `02_prompt_test.ipynb` | Load `.env`, create OpenAI client, run baseline and scenario prompts |
+
+## Infrastructure
+
+Defined in `infra/main.bicep`. Deployed **from within `01_deploy_infra.ipynb`** — no separate shell scripts needed.
+
+- Azure OpenAI account (`S0` tier) in Sweden Central
+- Model deployment: `gpt-4o-mini` (configurable in notebook)
 
 ## Quick start
 
-1. Prerequisites: Azure CLI, Bicep support, Python 3.10+.
-2. Copy `env/.env.example` to `.env` and fill values.
-3. Deploy infrastructure:
-   - `az login`
-   - `az account set --subscription <subscription-id>`
-   - `az deployment group create --resource-group <rg> --template-file infra/main.bicep --parameters location=swedencentral accountName=<unique-name> modelName=gpt-4o-mini deploymentName=chat`
-4. Open and run `notebooks/prompt_test.ipynb`.
+1. Open `notebooks/00_setup.ipynb` and follow each step.
+2. Continue to `notebooks/01_deploy_infra.ipynb`.
+3. Finish with `notebooks/02_prompt_test.ipynb`.
+
+That's it. The notebooks guide you through every step.
 
 ## Recommendation
 
-Recommendation: start with a low-cost model deployment for feasibility runs, then adjust model/version after confirming baseline behavior.
+Recommendation: start with `gpt-4o-mini` for cost-effective feasibility testing, then swap the model name in `01_deploy_infra.ipynb` once baseline behaviour is confirmed.
 
-## Notebook usefulness
+## Cost note
 
-Yes. Notebook is useful for rapid prompt iteration and qualitative validation with customer-like prompts.
-
-## Infrastructure needed
-
-Yes. This demo requires an Azure OpenAI/Foundry deployment before notebook execution.
+Run the tear-down cell in `01_deploy_infra.ipynb` when finished to delete all resources and stop charges.
