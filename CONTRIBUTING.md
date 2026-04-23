@@ -32,7 +32,8 @@ demos/foundry-rag-private-data-swec
 |---|---|
 | `00_setup.ipynb` | Prerequisites, Azure login, Python dependency install |
 | `01_deploy_infra.ipynb` | Deploy Bicep IaC via Azure CLI; retrieve outputs; **write `env/.env` automatically** |
-| `02_use_case.ipynb` | Load `env/.env`, exercise the scenario, validate hypothesis |
+| `02_configure.ipynb` | Python SDK post-deployment setup (e.g. create search index, upload data, register model endpoint) — skip if not needed |
+| `03_test.ipynb` | Load `env/.env`, exercise the scenario, validate hypothesis |
 
 Add further numbered notebooks (e.g. `03_`, `04_`) for additional scenario steps.
 
