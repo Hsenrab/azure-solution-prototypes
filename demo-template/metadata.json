@@ -1,0 +1,18 @@
+{
+  "demo_name": "<demo-name>",
+  "problem_statement": "<short customer problem statement>",
+  "hypothesis": "<what this demo is trying to validate>",
+  "customer_scenario": "<who/what scenario this helps>",
+  "status": "proposed",
+  "owner": "<team-or-person>",
+  "technologies": [
+    "<language-or-framework>"
+  ],
+  "azure_services": [
+    "<azure-service-name>"
+  ],
+  "data_requirements": "<sample data, synthetic data, or no data>",
+  "security_notes": "<important constraints and non-production notes>",
+  "setup_time_estimate": "<e.g. 20-30 minutes>",
+  "last_updated": "<YYYY-MM-DD>"
+}

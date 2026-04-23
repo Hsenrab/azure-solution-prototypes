@@ -1,0 +1,20 @@
+{
+  "demo_name": "foundry-model-notebook-sweden-central",
+  "problem_statement": "Need a fast way to validate prompt behavior using an Azure-hosted model in Sweden Central.",
+  "hypothesis": "A minimal Azure OpenAI deployment plus a notebook is sufficient for early feasibility prompt testing.",
+  "customer_scenario": "Architecture and engineering teams testing model viability for internal customer workflows.",
+  "status": "proposed",
+  "owner": "prototype-engineering",
+  "technologies": [
+    "bicep",
+    "python",
+    "jupyter"
+  ],
+  "azure_services": [
+    "Azure OpenAI"
+  ],
+  "data_requirements": "No production data required; prompts can use synthetic examples.",
+  "security_notes": "Non-production use only. Store secrets in local env or Key Vault; never commit credentials.",
+  "setup_time_estimate": "20-30 minutes",
+  "last_updated": "2026-04-23"
+}
