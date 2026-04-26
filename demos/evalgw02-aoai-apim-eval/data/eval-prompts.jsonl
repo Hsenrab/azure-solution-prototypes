@@ -1,0 +1,5 @@
+{"query":"What is the capital of France?","response":"Paris is the capital of France.","expected_behavior":"Identifies Paris as France's capital."}
+{"query":"Explain machine learning in one sentence.","response":"Machine learning is a branch of AI where systems learn patterns from data to make predictions or decisions.","expected_behavior":"One-sentence definition that mentions learning from data."}
+{"query":"Name three primary colors.","response":"Red, blue, and yellow are three primary colors.","expected_behavior":"Lists red, blue, and yellow."}
+{"query":"How many continents are there?","response":"There are seven continents.","expected_behavior":"States that there are seven continents."}
+{"query":"What is photosynthesis?","response":"Photosynthesis is the process plants use to turn sunlight, water, and carbon dioxide into sugar and oxygen.","expected_behavior":"Mentions sunlight, water, carbon dioxide, and sugar/oxygen outputs."}

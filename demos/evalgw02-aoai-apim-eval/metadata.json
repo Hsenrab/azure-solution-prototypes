@@ -1,0 +1,24 @@
+{
+  "demo_name": "evalgw02-aoai-apim-eval",
+  "problem_statement": "Validate Azure OpenAI inference through an APIM gateway endpoint and evaluate APIM-served responses with Azure AI Evaluation SDK.",
+  "hypothesis": "A classic Azure OpenAI resource and APIM in the same UK South resource group can expose a stable /chat/completions gateway endpoint for inference and evaluation workflows.",
+  "customer_scenario": "Platform and app teams testing centralized API gateway governance for Azure OpenAI while preserving notebook-first deployment and test flow.",
+  "status": "development",
+  "owner": "prototype-engineering",
+  "technologies": [
+    "bicep",
+    "python",
+    "jupyter",
+    "azure-ai-evaluation",
+    "requests"
+  ],
+  "azure_services": [
+    "Azure OpenAI",
+    "Azure API Management",
+    "Azure AI Evaluation SDK"
+  ],
+  "data_requirements": "Synthetic JSONL prompts and expected behavior only. No production data.",
+  "security_notes": "Prototype only. Uses API key based auth between APIM and Azure OpenAI for simplicity. Do not commit generated env/.env files or keys.",
+  "setup_time_estimate": "30-45 minutes",
+  "last_updated": "2026-04-25"
+}

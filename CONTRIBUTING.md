@@ -48,18 +48,79 @@ The `env/.env` file is **never filled in manually**. `01_deploy_infra.ipynb` que
 - Environment template (no secrets) -> `env/.env.example`
 - Architecture notes -> `docs/`
 - Screenshots/output artifacts -> `outputs/`
+- Python dependencies -> `requirements.txt`
 
-## 5) Keep demos lightweight
+## 5) Python Virtual Environment & Dependencies
+
+Each demo creates its own isolated Python virtual environment to avoid dependency conflicts:
+
+1. **Create `requirements.txt`** in the demo folder root with all Python packages needed
+   - Base packages: `azure-ai-inference`, `python-dotenv`, `requests`
+   - Add demo-specific packages (e.g., `azure-ai-evaluation`, `azure-search-documents`)
+   - See `demo-template/requirements.txt` for examples
+
+2. **Virtual environment setup** is automatic in `00_setup.ipynb`
+   - Creates `.venv` folder in demo root
+   - Installs all packages from `requirements.txt` into the venv
+   - Notebook prompts user to select the venv kernel in VS Code
+
+3. **After running `00_setup.ipynb`:**
+   - Users select the `.venv` interpreter: `Ctrl+Shift+P` → "Python: Select Interpreter"
+   - All subsequent notebooks run in this isolated environment
+
+## 6) Running Azure CLI Commands in Notebooks
+
+Use `subprocess` with `shell=True` to run `az` CLI commands. This pattern ensures the shell handles PATH lookup correctly.
+
+**Pattern:**
+
+```python
+import subprocess
+
+# ✓ CORRECT: Use shell=True (string command, not list)
+result = subprocess.run('az login', shell=True, capture_output=True, text=True)
+if result.returncode == 0:
+    print('OK: Login successful')
+else:
+    print(f'ERROR: {result.stderr}')
+```
+
+**Key points:**
+- Always use `shell=True` so the shell (PowerShell on Windows) resolves `az` on PATH
+- Pass the command as a **string**, not a list: `'az login'` not `['az', 'login']`
+- Use `capture_output=True, text=True` to capture stdout/stderr as strings
+- Check `result.returncode == 0` for success; `result.stderr` for error messages
+
+**For Azure CLI queries that need JSON parsing:**
+
+```python
+import subprocess
+import json
+
+result = subprocess.run(
+    'az account show --query "{Id:id, Name:name}" -o json',
+    shell=True,
+    capture_output=True,
+    text=True
+)
+if result.returncode == 0:
+    data = json.loads(result.stdout)
+    print(f"Subscription: {data['Name']} ({data['Id']})")
+```
+
+Avoid calling `subprocess.run()` with a list (e.g., `['az', 'login']`) — this bypasses the shell and causes PATH lookup failures.
+
+## 7) Keep demos lightweight
 
 - Prefer minimal viable infra and code
 - Mark optional production controls clearly as optional
 - Record assumptions and known gaps in `docs/architecture-notes.md`
 
-## 6) Metadata expectations
+## 7) Metadata expectations
 
 Use the same schema keys as `demo-template/metadata.json` so demos can be indexed consistently.
 
-## 7) Copilot usage
+## 8) Copilot usage
 
 Use these reusable prompts when creating/extending demos:
 

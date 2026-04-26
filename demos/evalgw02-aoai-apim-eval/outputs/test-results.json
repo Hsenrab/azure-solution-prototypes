@@ -1,0 +1,23 @@
+[
+  {
+    "index": 1,
+    "query": "What is the capital of France?",
+    "response": "The capital of France is Paris.",
+    "model": "gpt-4o-2024-11-20",
+    "status": "success"
+  },
+  {
+    "index": 2,
+    "query": "Explain machine learning in one sentence.",
+    "response": "Machine learning is a subset of artificial intelligence where computers learn patterns and make predictions or decisions from data without explicit programming.",
+    "model": "gpt-4o-2024-11-20",
+    "status": "success"
+  },
+  {
+    "index": 3,
+    "query": "Name three primary colors.",
+    "response": "The three primary colors are **red**, **blue**, and **yellow**.",
+    "model": "gpt-4o-2024-11-20",
+    "status": "success"
+  }
+]
