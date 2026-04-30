@@ -10,6 +10,7 @@ Help engineers create and extend lightweight Azure prototype demos quickly.
 - Keep each demo self-contained under `demos/<demo-name>/`.
 - Do not introduce enterprise-scale architecture unless explicitly requested.
 - Prefer plain language, minimal dependencies, and readable setup steps.
+- For teaching-oriented notebooks, prefer explicit repeated code in separate cells over helper functions or abstractions when repetition makes the flow easier to follow.
 
 ## Required demo shape
 

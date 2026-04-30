@@ -117,6 +117,17 @@ resource openAiBackend 'Microsoft.ApiManagement/service/backends@2023-09-01-prev
   }
 }
 
+resource openAiSecondaryBackend 'Microsoft.ApiManagement/service/backends@2023-09-01-preview' = {
+  parent: apim
+  name: 'aoai-backend-secondary'
+  properties: {
+    title: 'Azure OpenAI backend secondary'
+    description: 'Backend for classic Azure OpenAI secondary deployment'
+    url: 'https://${openAi.name}.openai.azure.com/openai/deployments/${secondaryDeploymentName}'
+    protocol: 'http'
+  }
+}
+
 resource openAiApi 'Microsoft.ApiManagement/service/apis@2023-09-01-preview' = {
   parent: apim
   name: 'azure-openai'
@@ -124,6 +135,20 @@ resource openAiApi 'Microsoft.ApiManagement/service/apis@2023-09-01-preview' = {
     displayName: 'Azure OpenAI Gateway'
     description: 'APIM gateway for Azure OpenAI chat completions'
     path: 'openai'
+    protocols: [
+      'https'
+    ]
+    subscriptionRequired: true
+  }
+}
+
+resource openAiSecondaryApi 'Microsoft.ApiManagement/service/apis@2023-09-01-preview' = {
+  parent: apim
+  name: 'azure-openai-secondary'
+  properties: {
+    displayName: 'Azure OpenAI Gateway Secondary'
+    description: 'APIM gateway for Azure OpenAI chat completions against the secondary deployment'
+    path: 'openai51'
     protocols: [
       'https'
     ]
@@ -141,8 +166,35 @@ resource openAiApiOnUnlimitedProduct 'Microsoft.ApiManagement/service/products/a
   name: openAiApi.name
 }
 
+resource openAiSecondaryApiOnUnlimitedProduct 'Microsoft.ApiManagement/service/products/apis@2023-09-01-preview' = {
+  parent: unlimitedProduct
+  name: openAiSecondaryApi.name
+}
+
 resource chatCompletionsOperation 'Microsoft.ApiManagement/service/apis/operations@2023-09-01-preview' = {
   parent: openAiApi
+  name: 'chat-completions-post'
+  properties: {
+    displayName: 'POST chat/completions'
+    method: 'POST'
+    urlTemplate: '/chat/completions'
+    request: {
+      representations: [
+        {
+          contentType: 'application/json'
+        }
+      ]
+    }
+    responses: [
+      {
+        statusCode: 200
+      }
+    ]
+  }
+}
+
+resource chatCompletionsSecondaryOperation 'Microsoft.ApiManagement/service/apis/operations@2023-09-01-preview' = {
+  parent: openAiSecondaryApi
   name: 'chat-completions-post'
   properties: {
     displayName: 'POST chat/completions'
@@ -196,6 +248,39 @@ resource chatCompletionsPolicy 'Microsoft.ApiManagement/service/apis/operations/
   ]
 }
 
+resource chatCompletionsSecondaryPolicy 'Microsoft.ApiManagement/service/apis/operations/policies@2023-09-01-preview' = {
+  parent: chatCompletionsSecondaryOperation
+  name: 'policy'
+  properties: {
+    format: 'xml'
+    value: '''<policies>
+  <inbound>
+    <base />
+    <set-backend-service backend-id="aoai-backend-secondary" />
+    <set-header name="api-key" exists-action="override">
+      <value>{{openai-api-key}}</value>
+    </set-header>
+    <set-query-parameter name="api-version" exists-action="override">
+      <value>2024-10-21</value>
+    </set-query-parameter>
+  </inbound>
+  <backend>
+    <forward-request />
+  </backend>
+  <outbound>
+    <base />
+  </outbound>
+  <on-error>
+    <base />
+  </on-error>
+</policies>'''
+  }
+  dependsOn: [
+    openAiKeyNamedValue
+    openAiSecondaryBackend
+  ]
+}
+
 output location string = location
 output resourceGroupName string = resourceGroup().name
 output openAiAccountName string = openAi.name
@@ -205,4 +290,5 @@ output secondaryDeploymentName string = secondaryDeploymentName
 output apimServiceName string = apim.name
 output apimGatewayUrl string = apim.properties.gatewayUrl
 output apimChatCompletionsUrl string = '${apim.properties.gatewayUrl}/openai/chat/completions'
+output apimSecondaryChatCompletionsUrl string = '${apim.properties.gatewayUrl}/openai51/chat/completions'
 output legacyApiVersion string = '2024-10-21'
