@@ -7,6 +7,7 @@ A lightweight internal starter repository for Azure-focused prototypes, feasibil
 - Capture small, practical demos for real customer scenarios
 - Keep each demo self-contained and easy to run
 - Support fast experimentation over production hardening
+- No backward compatibility requirement by default; favor the simplest forward-looking implementation unless compatibility is explicitly requested
 - Combine infrastructure, app code, notebooks, and setup notes where useful
 
 ## Top-level structure
@@ -14,7 +15,7 @@ A lightweight internal starter repository for Azure-focused prototypes, feasibil
 ```text
 .github/
   copilot-instructions.md
-  prompts/
+  skills/
 demos/
   foundry-model-notebook-sweden-central/
 demo-template/
@@ -84,9 +85,7 @@ Use `demo-template/metadata.json` as the baseline.
 ## Copilot support
 
 - Repo-wide instructions: `.github/copilot-instructions.md`
-- Reusable prompts:
-  - `.github/prompts/create-new-demo.prompt.md`
-  - `.github/prompts/extend-existing-demo.prompt.md`
+- Repository skill: `.github/skills/azure-demo-authoring/SKILL.md`
 
 ## Recommendation notes
 
