@@ -1,0 +1,10 @@
+{
+  "metrics": {},
+  "rows": 5,
+  "model_config": {
+    "type": "openai",
+    "base_url": "https://apim-evalgw02-1-uks.azure-api.net/openai",
+    "model": "chat4o",
+    "auth": "subscription-key query parameter via APIM"
+  }
+}

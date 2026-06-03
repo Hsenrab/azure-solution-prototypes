@@ -42,6 +42,30 @@ STYLE = """
   border: 1px solid #566273;
   border-radius: 8px;
 }
+.compare-wrap .title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.compare-wrap .title-row h3 {
+    margin: 0;
+}
+.compare-wrap .badge-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.compare-wrap .badge {
+    background: #2d3f56;
+    color: #eaf3ff;
+    border: 1px solid #566273;
+    border-radius: 999px;
+    padding: 2px 9px;
+    font-size: 12px;
+    line-height: 1.4;
+}
 .compare-wrap .meta {
   margin: 0 0 8px;
   color: #d6e0eb;
@@ -79,6 +103,7 @@ STYLE = """
   border-left: 3px solid #86c7ff;
   border-radius: 6px;
   color: #f5f8fc;
+    line-height: 1.55;
 }
 .compare-wrap .markdown-body {
   line-height: 1.6;
@@ -213,6 +238,10 @@ def markdown_to_html(text):
 
 
 def difference_explanation(row):
+    explicit_reason = row.get('difference_explanation') or row.get('evaluator_reason')
+    if explicit_reason:
+        return str(explicit_reason)
+
     primary_text = row.get('primary_response', '') or ''
     secondary_text = row.get('secondary_response', '') or ''
     category = row.get('category', '')
@@ -272,12 +301,20 @@ def render_card(row):
     secondary_html = markdown_to_html(row.get('secondary_response', ''))
     primary_class = 'primary' if row['primary_status'] == 'success' else 'error'
     secondary_class = 'secondary' if row['secondary_status'] == 'success' else 'error'
+    system_label = row.get('system_label', 'System')
+    user_label = row.get('user_label', 'User')
+    difference_label = row.get('difference_label', 'Difference explanation')
+    badges = row.get('badges', []) or []
+    badges_html = ''.join(f'<span class="badge">{html_escape(b)}</span>' for b in badges)
 
     return f"""
 <div class="card">
-  <h3>[{html_escape(row['scenario_id'])}] {html_escape(row['category'])}</h3>
-  <p class="meta"><b>System:</b> {html_escape(row['system'])}</p>
-  <p class="meta"><b>User:</b> {html_escape(row['user'])}</p>
+    <div class="title-row">
+        <h3>[{html_escape(row['scenario_id'])}] {html_escape(row['category'])}</h3>
+        <div class="badge-group">{badges_html}</div>
+    </div>
+    <p class="meta"><b>{html_escape(system_label)}:</b> {html_escape(row['system'])}</p>
+    <p class="meta"><b>{html_escape(user_label)}:</b> {html_escape(row['user'])}</p>
   <table>
     <thead>
       <tr>
@@ -292,7 +329,7 @@ def render_card(row):
       </tr>
     </tbody>
   </table>
-  <div class="note"><b>Difference explanation:</b> {html_escape(difference_explanation(row))}</div>
+    <div class="note"><b>{html_escape(difference_label)}:</b><br>{html_escape(difference_explanation(row))}</div>
 </div>
 """
 

@@ -1,0 +1,42 @@
+[
+  {
+    "pair": 1,
+    "query": "Should I put HTTP retry logic in my service code or delegate it to a service mesh?",
+    "similarity": 1.0,
+    "evaluator_reason": "The response directly addresses the query by recommending delegating HTTP retry logic to a service mesh and provides detailed reasoning, including benefits like consistency, configurability, and observability. It also contextualizes the advice for Kubernetes users, adding valuable insight.",
+    "response_4o": "Put retry logic in your service code. You have full control over which status codes and exception types are worth retrying, you can log intermediate attempts, and you avoid the operational overhead of running a service mesh for a single service. A short try/sleep loop or the tenacity library covers most cases.",
+    "response_51": "Delegate retries to the service mesh (Istio or Linkerd) rather than duplicating the logic in every service. Retries are an infrastructure concern: centralising them in the mesh means consistent behaviour across all services, configurable via YAML without a redeploy, and built-in observability and circuit breaking at no extra code cost. If you are already on Kubernetes, this is the right layer for it."
+  },
+  {
+    "pair": 2,
+    "query": "Is it better to use async or sync code for a Python web scraper?",
+    "similarity": 4.0,
+    "evaluator_reason": "The response directly addresses the user's query by comparing async and sync code for Python web scrapers, providing detailed, insightful guidance based on scale and complexity. It also explains when async is beneficial, adding valuable context.",
+    "response_4o": "For scraping many URLs, async is significantly faster. I/O wait dominates in scraping, so asyncio with aiohttp or httpx lets you fire hundreds of requests concurrently without spawning hundreds of threads. Use sync requests only for a handful of URLs or a quick one-off script.",
+    "response_51": "It depends on scale. For fewer than roughly 20 URLs, sync requests with a ThreadPoolExecutor is simpler and fast enough. For hundreds of URLs, asyncio with aiohttp or httpx offers better throughput. For large crawls, Scrapy manages concurrency, politeness delays, and pipelines for you so you don't have to wire up the event loop manually. Async raw code is not always the right answer — the added complexity is only worth it when you have the URL volume to justify it."
+  },
+  {
+    "pair": 3,
+    "query": "Write a short story about a student who finds confidence before giving a class presentation.",
+    "similarity": 4.0,
+    "evaluator_reason": "The response fully addresses the user's request by providing a detailed and engaging short story about a student gaining confidence before a class presentation. It also includes meaningful insights about overcoming fear and finding confidence.",
+    "response_4o": "Mia stood at the back of Room 12, palms damp around her note cards. Every laugh from the hallway sounded like a warning. She had practiced at home, but now the words felt slippery.\n\nWhen her name was called, she walked to the front and saw her friend Theo in the first row, giving her a small thumbs-up. Mia took one breath, then another. She opened with the story of her grandmother teaching her to grow tomatoes on a tiny balcony.\n\nSomething shifted. The class leaned in. Her voice steadied. By the last slide, she was speaking without looking down.\n\nWhen she finished, there was a beat of silence and then applause. Mia sat down smiling, surprised to realize she wanted to present again.",
+    "response_51": "The projector hummed like a nervous insect while Leila waited for her turn. Her presentation on urban gardens was next, and she had already imagined three disasters: forgetting every line, dropping her flash drive, and fainting in front of twenty-seven classmates.\n\nShe pressed her fingers to the edge of her notebook and remembered what her older brother had told her that morning: 'You do not need to be fearless. You just need your first sentence.'\n\nWhen the teacher called her name, Leila walked to the front, knees unsteady, and clicked to the title slide.\n\n'Last summer, a tomato plant grew through a crack in our apartment parking lot,' she began. A few students looked up. She continued, describing how something fragile could thrive in hard places.\n\nBy slide three she stopped reading her notes. By slide five she was answering questions before they were fully asked. She compared rooftop gardens to open-air classrooms, talked about food deserts, and explained why planting herbs outside the library had changed how younger students used the space.\n\nAt the end, the room was quiet in the good way - attentive, not awkward. Then came claps, then more claps, and even the students who usually stared at their phones were looking at her.\n\nBack at her desk, Leila wrote a single line in the margin of her notebook: 'Confidence is what shows up after you start.'"
+  },
+  {
+    "pair": 4,
+    "query": "Is Python a good choice for a high-performance API server?",
+    "similarity": 3.0,
+    "evaluator_reason": "The response directly addresses Python's suitability for high-performance API servers, discussing its limitations and alternatives like Go or Rust. It provides detailed insights and actionable advice, enhancing the user's understanding.",
+    "response_4o": "Yes, for most APIs Python is fast enough. Async frameworks like FastAPI handle high concurrency well, and the bottleneck is usually the database or network, not the Python runtime. Profile before assuming Python is too slow — premature optimisation leads to unnecessary complexity.",
+    "response_51": "Python has real performance limits for high-throughput scenarios. The GIL prevents true multi-threading for CPU-bound work, and even async Python is significantly slower than Go or Rust at raw request throughput. FastAPI is excellent for moderate loads, but if sustained high QPS is a hard requirement you should evaluate a compiled language first, or at least benchmark carefully before committing to Python."
+  },
+  {
+    "pair": 5,
+    "query": "What is the difference between authentication and authorisation?",
+    "similarity": 5.0,
+    "evaluator_reason": "The response fully explains the difference between authentication and authorization, addressing the user's query with clear definitions and an example for better understanding. It is accurate, complete, and insightful.",
+    "response_4o": "Authentication is the process of verifying who you are (e.g. checking a password or token). Authorisation is the process of deciding what you are allowed to do once your identity is confirmed. You must authenticate before you can be authorised.",
+    "response_51": "Authentication answers 'Who are you?' — it verifies identity, typically through credentials such as a password, certificate, or biometric. Authorisation answers 'What are you allowed to do?' — it checks whether the authenticated identity has permission to perform a requested action. The two are distinct steps: authentication must succeed before authorisation applies. For example, logging in is authentication; the system then checking whether your account may access an admin page is authorisation."
+  }
+]
