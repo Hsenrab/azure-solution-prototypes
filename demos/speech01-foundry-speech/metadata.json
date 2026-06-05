@@ -1,0 +1,27 @@
+{
+  "demo_name": "speech01-foundry-speech",
+  "problem_statement": "Teams building voice copilots in Azure AI Foundry need a quick way to validate speech in and speech out using the same Foundry-backed AI Services account.",
+  "hypothesis": "An Azure AI Services account (kind: AIServices) with project management enabled can host a Foundry project and successfully run Speech SDK text-to-speech and speech-to-text roundtrips using generated deployment outputs.",
+  "customer_scenario": "Platform and app teams validating low-friction voice capability for Foundry-based assistants before building full conversational orchestration.",
+  "status": "development",
+  "owner": "prototype-engineering",
+  "technologies": [
+    "bicep",
+    "python",
+    "jupyter",
+    "azure-functions",
+    "azure-cognitiveservices-speech",
+    "azure-identity",
+    "requests",
+    "python-dotenv"
+  ],
+  "azure_services": [
+    "Azure AI Foundry",
+    "Azure AI Services",
+    "Azure AI Speech"
+  ],
+  "data_requirements": "No production data. Uses synthetic text prompts and generated WAV output only.",
+  "security_notes": "Prototype only. Uses a function key for the HTTP trigger and managed identity / AAD for Speech SDK calls. Do not commit env/.env, keys, or recorded/generated audio containing sensitive content.",
+  "setup_time_estimate": "20-30 minutes",
+  "last_updated": "2026-06-04"
+}

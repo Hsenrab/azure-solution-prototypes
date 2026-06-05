@@ -1,0 +1,19 @@
+# Python dependencies for this demo
+# Add demo-specific packages here
+
+# Standard Azure AI Foundry SDK packages:
+azure-ai-inference>=1.0.0b9
+azure-ai-projects>=1.0.0b7
+azure-cognitiveservices-speech>=1.41.1
+azure-identity>=1.17.0
+azure-storage-blob>=12.22.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+
+# Optionally add evaluation SDK for demos that need it:
+# azure-ai-evaluation>=0.1.0
+
+# Add other demo-specific packages as needed:
+# azure-search-documents>=11.0.0  # for RAG demos
+# azure-cosmos>=4.7.0              # for CosmosDB demos
+# pandas>=2.0.0                    # for data analysis

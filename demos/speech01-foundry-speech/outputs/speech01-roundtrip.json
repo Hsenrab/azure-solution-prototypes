@@ -1,0 +1,7 @@
+{
+  "input_text": "This demo validates Azure Speech from a Foundry aligned AI Services account.",
+  "voice": "en-US-AvaMultilingualNeural",
+  "wav_path": "..\\outputs\\speech01-roundtrip.wav",
+  "recognized_text": "This demo validates Azure Speech from a Foundry aligned AI Services account.",
+  "recognition_reason": "ResultReason.RecognizedSpeech"
+}

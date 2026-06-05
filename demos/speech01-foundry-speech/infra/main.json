@@ -1,0 +1,299 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.42.1.51946",
+      "templateHash": "5120251027668617981"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "eastus2",
+      "metadata": {
+        "description": "Azure region for resources"
+      }
+    },
+    "demoId": {
+      "type": "string",
+      "defaultValue": "speech01",
+      "metadata": {
+        "description": "Demo ID used for unique naming"
+      }
+    },
+    "uniqueSuffix": {
+      "type": "string",
+      "defaultValue": "[uniqueString(subscription().id, resourceGroup().id)]",
+      "metadata": {
+        "description": "Optional suffix to avoid naming collisions"
+      }
+    },
+    "projectDisplayName": {
+      "type": "string",
+      "defaultValue": "Speech Prototype Project",
+      "metadata": {
+        "description": "Display name for Foundry project"
+      }
+    },
+    "speechCallerPrincipalId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional principal object ID to grant Speech data-plane access on the AI Services account (for example, a Function managed identity). Leave empty to skip role assignment."
+      }
+    },
+    "functionAppClientId": {
+      "type": "string",
+      "metadata": {
+        "description": "Entra app registration client ID used to protect the Function endpoint with Easy Auth."
+      }
+    }
+  },
+  "variables": {
+    "normalizedDemoId": "[toLower(replace(parameters('demoId'), '-', ''))]",
+    "accountNameBase": "[format('ai{0}{1}', variables('normalizedDemoId'), take(parameters('uniqueSuffix'), 5))]",
+    "accountName": "[take(variables('accountNameBase'), 24)]",
+    "projectName": "[format('proj-{0}', toLower(parameters('demoId')))]",
+    "functionStorageName": "[take(format('st{0}{1}', variables('normalizedDemoId'), take(parameters('uniqueSuffix'), 10)), 24)]",
+    "functionPlanName": "[take(format('plan-{0}-{1}', variables('normalizedDemoId'), take(parameters('uniqueSuffix'), 5)), 40)]",
+    "functionAppName": "[take(format('func-{0}-{1}', variables('normalizedDemoId'), take(parameters('uniqueSuffix'), 5)), 60)]",
+    "appInsightsName": "[take(format('appi-{0}-{1}', variables('normalizedDemoId'), take(parameters('uniqueSuffix'), 5)), 60)]",
+    "cognitiveServicesSpeechUserRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'f2dc8367-1007-4938-bd23-fe263f013447')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.CognitiveServices/accounts",
+      "apiVersion": "2025-06-01",
+      "name": "[variables('accountName')]",
+      "location": "[parameters('location')]",
+      "kind": "AIServices",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "sku": {
+        "name": "S0"
+      },
+      "properties": {
+        "allowProjectManagement": true,
+        "customSubDomainName": "[variables('accountName')]",
+        "disableLocalAuth": true,
+        "dynamicThrottlingEnabled": false,
+        "publicNetworkAccess": "Enabled",
+        "restrictOutboundNetworkAccess": false
+      }
+    },
+    {
+      "type": "Microsoft.CognitiveServices/accounts/projects",
+      "apiVersion": "2025-06-01",
+      "name": "[format('{0}/{1}', variables('accountName'), variables('projectName'))]",
+      "location": "[parameters('location')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "description": "Prototype project for validating Azure Speech in a Foundry-aligned setup.",
+        "displayName": "[parameters('projectDisplayName')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts', variables('accountName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('functionStorageName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "allowBlobPublicAccess": false,
+        "minimumTlsVersion": "TLS1_2",
+        "supportsHttpsTrafficOnly": true
+      }
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2023-12-01",
+      "name": "[variables('functionPlanName')]",
+      "location": "[parameters('location')]",
+      "kind": "functionapp",
+      "sku": {
+        "name": "Y1",
+        "tier": "Dynamic"
+      },
+      "properties": {
+        "reserved": true
+      }
+    },
+    {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "[variables('appInsightsName')]",
+      "location": "[parameters('location')]",
+      "kind": "web",
+      "properties": {
+        "Application_Type": "web"
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2023-12-01",
+      "name": "[variables('functionAppName')]",
+      "location": "[parameters('location')]",
+      "kind": "functionapp,linux",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('functionPlanName'))]",
+        "httpsOnly": true,
+        "siteConfig": {
+          "linuxFxVersion": "Python|3.12",
+          "appSettings": [
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "~4"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "python"
+            },
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('functionStorageName'), listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('functionStorageName')), '2023-05-01').keys[0].value, environment().suffixes.storage)]"
+            },
+            {
+              "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+              "value": "[reference(resourceId('Microsoft.Insights/components', variables('appInsightsName')), '2020-02-02').ConnectionString]"
+            },
+            {
+              "name": "AZURE_AI_ENDPOINT",
+              "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', variables('accountName')), '2025-06-01').endpoint]"
+            },
+            {
+              "name": "AZURE_AUTH_MODE",
+              "value": "aad"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts', variables('accountName'))]",
+        "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]",
+        "[resourceId('Microsoft.Web/serverfarms', variables('functionPlanName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('functionStorageName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/sites/config",
+      "apiVersion": "2023-12-01",
+      "name": "[format('{0}/{1}', variables('functionAppName'), 'authsettingsV2')]",
+      "properties": {
+        "platform": {
+          "enabled": true
+        },
+        "globalValidation": {
+          "requireAuthentication": true,
+          "unauthenticatedClientAction": "Return401"
+        },
+        "identityProviders": {
+          "azureActiveDirectory": {
+            "enabled": true,
+            "registration": {
+              "clientId": "[parameters('functionAppClientId')]",
+              "openIdIssuer": "[format('https://login.microsoftonline.com/{0}/v2.0', tenant().tenantId)]"
+            },
+            "validation": {
+              "allowedAudiences": [
+                "[format('api://{0}', parameters('functionAppClientId'))]"
+              ]
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('functionAppName'))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(parameters('speechCallerPrincipalId')))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.CognitiveServices/accounts', variables('accountName'))]",
+      "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts', variables('accountName')), parameters('speechCallerPrincipalId'), 'CognitiveServicesSpeechUser')]",
+      "properties": {
+        "principalId": "[parameters('speechCallerPrincipalId')]",
+        "roleDefinitionId": "[variables('cognitiveServicesSpeechUserRoleDefinitionId')]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts', variables('accountName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.CognitiveServices/accounts', variables('accountName'))]",
+      "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts', variables('accountName')), variables('functionAppName'), 'CognitiveServicesSpeechUser')]",
+      "properties": {
+        "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('functionAppName')), '2023-12-01', 'full').identity.principalId]",
+        "roleDefinitionId": "[variables('cognitiveServicesSpeechUserRoleDefinitionId')]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts', variables('accountName'))]",
+        "[resourceId('Microsoft.Web/sites', variables('functionAppName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "location": {
+      "type": "string",
+      "value": "[parameters('location')]"
+    },
+    "resourceGroupName": {
+      "type": "string",
+      "value": "[resourceGroup().name]"
+    },
+    "aiServicesAccountName": {
+      "type": "string",
+      "value": "[variables('accountName')]"
+    },
+    "aiServicesEndpoint": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', variables('accountName')), '2025-06-01').endpoint]"
+    },
+    "speechRegion": {
+      "type": "string",
+      "value": "[parameters('location')]"
+    },
+    "foundryProjectName": {
+      "type": "string",
+      "value": "[variables('projectName')]"
+    },
+    "foundryProjectEndpoint": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts/projects', variables('accountName'), variables('projectName')), '2025-06-01').endpoints['AI Foundry API']]"
+    },
+    "functionAppName": {
+      "type": "string",
+      "value": "[variables('functionAppName')]"
+    },
+    "functionUrl": {
+      "type": "string",
+      "value": "[format('https://{0}.azurewebsites.net/api/speech-roundtrip', variables('functionAppName'))]"
+    },
+    "appInsightsName": {
+      "type": "string",
+      "value": "[variables('appInsightsName')]"
+    },
+    "functionAuthClientId": {
+      "type": "string",
+      "value": "[parameters('functionAppClientId')]"
+    }
+  }
+}
