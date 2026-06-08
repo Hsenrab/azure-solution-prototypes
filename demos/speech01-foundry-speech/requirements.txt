@@ -1,9 +1,7 @@
 # Python dependencies for this demo
 # Add demo-specific packages here
 
-# Standard Azure AI Foundry SDK packages:
-azure-ai-inference>=1.0.0b9
-azure-ai-projects>=1.0.0b7
+# Speech + identity + deployment helpers used by this demo:
 azure-cognitiveservices-speech>=1.41.1
 azure-identity>=1.17.0
 azure-storage-blob>=12.22.0
