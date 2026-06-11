@@ -1,0 +1,22 @@
+{
+  "demo_name": "gpt4o01-text-image-audio",
+  "problem_statement": "Teams need a simple, notebook-first way to validate GPT-4o multimodal capabilities before adding production architecture.",
+  "hypothesis": "A staged notebook flow can validate text-only, local-image, and speech-in/speech-out scenarios with reusable patterns and clear learning-oriented code.",
+  "customer_scenario": "An engineering team evaluates GPT-4o for multimodal assistant experiences and wants a low-friction prototype path with explicit teardown.",
+  "status": "development",
+  "owner": "azure-solution-prototypes",
+  "technologies": [
+    "python",
+    "jupyter",
+    "azure-ai-inference"
+  ],
+  "azure_services": [
+    "Azure AI Services",
+    "Azure AI Foundry Models",
+    "Azure Speech"
+  ],
+  "data_requirements": "Synthetic prompts and local sample media files only.",
+  "security_notes": "Feasibility demo only. Keep media inputs non-sensitive. Do not commit env/.env or generated outputs containing credentials.",
+  "setup_time_estimate": "35-50 minutes",
+  "last_updated": "2026-06-08"
+}
