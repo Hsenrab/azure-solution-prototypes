@@ -68,47 +68,35 @@ Each demo creates its own isolated Python virtual environment to avoid dependenc
    - Users select the `.venv` interpreter: `Ctrl+Shift+P` → "Python: Select Interpreter"
    - All subsequent notebooks run in this isolated environment
 
-## 6) Running Azure CLI Commands in Notebooks
+## 6) Python SDK First; Azure CLI as Fallback
 
-Use `subprocess` with `shell=True` to run `az` CLI commands. This pattern ensures the shell handles PATH lookup correctly.
+Prefer Python Azure SDKs in notebooks and demo app code when they support the operation. This keeps logic in Python, improves type safety, and avoids shell-level command parsing issues.
 
-**Pattern:**
+For Functions-focused demos, prefer SDK-based flows first:
+- `azure-identity` for authentication
+- `azure-storage-blob` for package upload / data plane operations
+- `azure-mgmt-web` for Function App management-plane operations
 
-```python
-import subprocess
+Use Azure CLI via `subprocess` only when SDK coverage is missing or significantly more complex for the demo scope.
 
-# ✓ CORRECT: Use shell=True (string command, not list)
-result = subprocess.run('az login', shell=True, capture_output=True, text=True)
-if result.returncode == 0:
-    print('OK: Login successful')
-else:
-    print(f'ERROR: {result.stderr}')
-```
-
-**Key points:**
-- Always use `shell=True` so the shell (PowerShell on Windows) resolves `az` on PATH
-- Pass the command as a **string**, not a list: `'az login'` not `['az', 'login']`
-- Use `capture_output=True, text=True` to capture stdout/stderr as strings
-- Check `result.returncode == 0` for success; `result.stderr` for error messages
-
-**For Azure CLI queries that need JSON parsing:**
+**Fallback CLI pattern (when needed):**
 
 ```python
 import subprocess
-import json
 
-result = subprocess.run(
-    'az account show --query "{Id:id, Name:name}" -o json',
-    shell=True,
-    capture_output=True,
-    text=True
-)
-if result.returncode == 0:
-    data = json.loads(result.stdout)
-    print(f"Subscription: {data['Name']} ({data['Id']})")
+result = subprocess.run([az_cmd, "account", "show", "--output", "json"], capture_output=True, text=True)
+if result.returncode != 0:
+    raise RuntimeError(
+        f"az account show failed (exit {result.returncode})\n"
+        f"stderr: {result.stderr.strip()}\n"
+        f"stdout: {result.stdout.strip()}"
+    )
 ```
 
-Avoid calling `subprocess.run()` with a list (e.g., `['az', 'login']`) — this bypasses the shell and causes PATH lookup failures.
+**Key points for CLI fallback:**
+- Prefer argument lists over `shell=True`.
+- Always capture and surface both stderr and stdout on failure.
+- Avoid `check=True` alone for `az` calls; raise explicit errors with captured output.
 
 ## 7) Keep demos lightweight
 

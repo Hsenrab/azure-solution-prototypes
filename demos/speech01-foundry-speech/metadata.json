@@ -1,0 +1,27 @@
+{
+  "demo_name": "speech01-foundry-speech",
+  "problem_statement": "Teams need to validate that a hosted service can call Azure Speech with managed identity after moving to a Foundry-aligned Azure AI Services (AIServices) account.",
+  "hypothesis": "In a Foundry-aligned AIServices setup, an Azure Function can invoke Speech with managed identity with minimal code differences from older Cognitive Services account usage, while still supporting notebook validation.",
+  "customer_scenario": "Platform and app teams validating service-hosted speech capabilities for Foundry-based assistants before building full conversational orchestration.",
+  "status": "development",
+  "owner": "prototype-engineering",
+  "technologies": [
+    "bicep",
+    "python",
+    "jupyter",
+    "azure-functions",
+    "azure-cognitiveservices-speech",
+    "azure-identity",
+    "requests",
+    "python-dotenv"
+  ],
+  "azure_services": [
+    "Azure AI Foundry",
+    "Azure AI Services",
+    "Azure AI Speech"
+  ],
+  "data_requirements": "No production data. Uses synthetic text prompts and generated WAV output only.",
+  "security_notes": "Prototype only. Uses a function key for the HTTP trigger and managed identity / AAD for Speech calls from both notebook and Function paths. Do not commit env/.env, keys, or recorded/generated audio containing sensitive content.",
+  "setup_time_estimate": "20-30 minutes",
+  "last_updated": "2026-06-05"
+}

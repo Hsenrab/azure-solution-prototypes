@@ -1,0 +1,184 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.42.1",
+      "templateHash": "cu01-foundry-video"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "uksouth",
+      "metadata": {
+        "description": "Azure region for resources"
+      }
+    },
+    "demoId": {
+      "type": "string",
+      "defaultValue": "cu01",
+      "metadata": {
+        "description": "Demo ID used for deterministic naming"
+      }
+    },
+    "uniqueSuffix": {
+      "type": "string",
+      "defaultValue": "[uniqueString(subscription().id, resourceGroup().id)]",
+      "metadata": {
+        "description": "Optional suffix to avoid naming collisions"
+      }
+    },
+    "deploymentName": {
+      "type": "string",
+      "defaultValue": "gpt-4.1-mini",
+      "metadata": {
+        "description": "Model deployment name used by notebooks"
+      }
+    },
+    "modelName": {
+      "type": "string",
+      "defaultValue": "gpt-4.1-mini",
+      "metadata": {
+        "description": "Model name for the deployment"
+      }
+    },
+    "modelVersion": {
+      "type": "string",
+      "defaultValue": "2024-12-01",
+      "metadata": {
+        "description": "Model version for the deployment"
+      }
+    },
+    "deploymentCapacityK": {
+      "type": "int",
+      "defaultValue": 100,
+      "metadata": {
+        "description": "Deployment capacity in thousands of tokens per minute"
+      }
+    },
+    "projectDisplayName": {
+      "type": "string",
+      "defaultValue": "CU01 Prototype Project",
+      "metadata": {
+        "description": "Display name for Foundry project"
+      }
+    },
+    "deployerPrincipalId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional deployer principal ID for RBAC (e.g., your user object ID)"
+      }
+    }
+  },
+  "variables": {
+    "normalizedDemoId": "[toLower(replace(parameters('demoId'), '-', ''))]",
+    "accountName": "[take(format('ai{0}{1}', variables('normalizedDemoId'), take(parameters('uniqueSuffix'), 5)), 24)]",
+    "projectName": "[format('proj-{0}', toLower(parameters('demoId')))]",
+    "disableLocalAuth": true
+  },
+  "resources": [
+    {
+      "type": "Microsoft.CognitiveServices/accounts",
+      "apiVersion": "2025-06-01",
+      "name": "[variables('accountName')]",
+      "location": "[parameters('location')]",
+      "kind": "AIServices",
+      "sku": {
+        "name": "S0"
+      },
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "allowProjectManagement": true,
+        "customSubDomainName": "[variables('accountName')]",
+        "disableLocalAuth": "[variables('disableLocalAuth')]",
+        "publicNetworkAccess": "Enabled",
+        "restrictOutboundNetworkAccess": false
+      }
+    },
+    {
+      "type": "Microsoft.CognitiveServices/accounts/deployments",
+      "apiVersion": "2024-10-01",
+      "name": "[format('{0}/{1}', variables('accountName'), parameters('deploymentName'))]",
+      "sku": {
+        "name": "GlobalStandard",
+        "capacity": "[parameters('deploymentCapacityK')]"
+      },
+      "properties": {
+        "model": {
+          "format": "OpenAI",
+          "name": "[parameters('modelName')]",
+          "version": "[parameters('modelVersion')]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts', variables('accountName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.CognitiveServices/accounts/projects",
+      "apiVersion": "2025-06-01",
+      "name": "[format('{0}/{1}', variables('accountName'), variables('projectName'))]",
+      "location": "[parameters('location')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "description": "Prototype project for validating Content Understanding workflows in a Foundry-aligned setup.",
+        "displayName": "[parameters('projectDisplayName')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts', variables('accountName'))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(parameters('deployerPrincipalId')))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.CognitiveServices/accounts/{0}', variables('accountName'))]",
+      "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts', variables('accountName')), parameters('deployerPrincipalId'), 'a97b65f3-24c8-4991-ab36-1fd38e6f3882')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'a97b65f3-24c8-4991-ab36-1fd38e6f3882')]",
+        "principalId": "[parameters('deployerPrincipalId')]",
+        "principalType": "User"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts', variables('accountName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "location": {
+      "type": "string",
+      "value": "[parameters('location')]"
+    },
+    "resourceGroupName": {
+      "type": "string",
+      "value": "[resourceGroup().name]"
+    },
+    "aiServicesAccountName": {
+      "type": "string",
+      "value": "[variables('accountName')]"
+    },
+    "aiServicesEndpoint": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', variables('accountName')), '2025-06-01').endpoint]"
+    },
+    "aiDeploymentName": {
+      "type": "string",
+      "value": "[parameters('deploymentName')]"
+    },
+    "foundryProjectName": {
+      "type": "string",
+      "value": "[variables('projectName')]"
+    },
+    "foundryProjectEndpoint": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts/projects', variables('accountName'), variables('projectName')), '2025-06-01').endpoints['AI Foundry API']]"
+    }
+  }
+}

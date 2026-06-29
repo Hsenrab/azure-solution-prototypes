@@ -1,0 +1,182 @@
+{
+  "created_agent": {
+    "metadata": {},
+    "object": "agent.version",
+    "id": "quick-rest-agent:1",
+    "name": "quick-rest-agent",
+    "version": "1",
+    "description": "",
+    "created_at": 1782147202,
+    "definition": {
+      "kind": "prompt",
+      "model": "gpt-4o",
+      "instructions": "You are a helpful AI agent for quick prototyping.",
+      "tools": [
+        {
+          "type": "code_interpreter"
+        }
+      ]
+    },
+    "status": "active",
+    "instance_identity": {
+      "principal_id": "15af9a2a-7c7b-4a89-8017-d5802f2f3f77",
+      "client_id": "15af9a2a-7c7b-4a89-8017-d5802f2f3f77"
+    },
+    "blueprint": {
+      "principal_id": "d1d62216-d57b-4859-94d6-207a472a3e06",
+      "client_id": "f6fc8d8e-8ad9-493a-97ed-2daf410029dd"
+    },
+    "blueprint_reference": {
+      "type": "ManagedAgentIdentityBlueprint",
+      "blueprint_id": "quick-rest-agent-f4989"
+    },
+    "agent_guid": "f4989248-df54-4279-9059-413487d00f3f"
+  },
+  "invocation": {
+    "metadata": {},
+    "top_logprobs": 0,
+    "temperature": 1,
+    "top_p": 1,
+    "service_tier": "default",
+    "prompt_cache_retention": "in_memory",
+    "model": "gpt-4o",
+    "reasoning": {
+      "context": null
+    },
+    "background": false,
+    "max_output_tokens": 256,
+    "text": {
+      "format": {
+        "type": "text"
+      },
+      "verbosity": "medium"
+    },
+    "tools": [
+      {
+        "type": "code_interpreter",
+        "container": {
+          "type": "auto"
+        }
+      }
+    ],
+    "tool_choice": "auto",
+    "truncation": "disabled",
+    "id": "resp_0f8d42215cfe594d006a39688aafbc8194bf44734dd1f9b8f5",
+    "object": "response",
+    "status": "completed",
+    "created_at": 1782147210,
+    "completed_at": 1782147213,
+    "error": null,
+    "incomplete_details": null,
+    "output": [
+      {
+        "type": "message",
+        "id": "msg_0f8d42215cfe594d006a39688c88708194a51e725da2447a18",
+        "agent_reference": {
+          "type": "agent_reference",
+          "name": "quick-rest-agent",
+          "version": "1"
+        },
+        "response_id": "resp_0f8d42215cfe594d006a39688aafbc8194bf44734dd1f9b8f5",
+        "role": "assistant",
+        "content": [
+          {
+            "type": "output_text",
+            "text": "This demo notebook allows for rapid prototyping by executing Python code in a stateful Jupyter notebook environment. It supports tasks like data analysis, visualization, file generation (e.g., presentations, reports, or datasets), and interaction with AI models for automated computations and content creation.",
+            "annotations": [],
+            "logprobs": []
+          }
+        ],
+        "status": "completed"
+      }
+    ],
+    "instructions": "You are a helpful AI agent for quick prototyping.",
+    "usage": {
+      "input_tokens": 193,
+      "input_tokens_details": {
+        "cached_tokens": 0
+      },
+      "output_tokens": 57,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 250
+    },
+    "parallel_tool_calls": true,
+    "agent_reference": {
+      "type": "agent_reference",
+      "name": "quick-rest-agent",
+      "version": "1"
+    },
+    "content_filters": [
+      {
+        "blocked": false,
+        "source_type": "prompt",
+        "content_filter_results": {
+          "sexual": {
+            "filtered": false,
+            "severity": "safe"
+          },
+          "hate": {
+            "filtered": false,
+            "severity": "safe"
+          },
+          "violence": {
+            "filtered": false,
+            "severity": "safe"
+          },
+          "self_harm": {
+            "filtered": false,
+            "severity": "safe"
+          },
+          "jailbreak": {
+            "filtered": false,
+            "detected": false
+          }
+        },
+        "content_filter_raw": [],
+        "content_filter_offsets": {
+          "start_offset": 962,
+          "end_offset": 1023,
+          "check_offset": 0
+        }
+      },
+      {
+        "blocked": false,
+        "source_type": "completion",
+        "content_filter_results": {
+          "sexual": {
+            "filtered": false,
+            "severity": "safe"
+          },
+          "hate": {
+            "filtered": false,
+            "severity": "safe"
+          },
+          "violence": {
+            "filtered": false,
+            "severity": "safe"
+          },
+          "self_harm": {
+            "filtered": false,
+            "severity": "safe"
+          },
+          "protected_material_text": {
+            "filtered": false,
+            "detected": false
+          },
+          "protected_material_code": {
+            "filtered": false,
+            "detected": false
+          }
+        },
+        "content_filter_raw": [],
+        "content_filter_offsets": {
+          "start_offset": 0,
+          "end_offset": 310,
+          "check_offset": 0
+        }
+      }
+    ]
+  }
+}
