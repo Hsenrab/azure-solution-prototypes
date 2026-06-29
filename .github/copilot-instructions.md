@@ -41,6 +41,18 @@ Help engineers create and extend lightweight Azure prototype demos quickly.
 - For production demos (in `demos/<demo-name>/`), confirmation flags may be `True`.
 - This ensures: (1) standardized soft-delete purge pattern across all demos, (2) deterministic cleanup that works reliably, (3) resource names become immediately reusable after purge.
 
+### Setup Notebook Standardization
+- ALL demos MUST use `speech01-foundry-speech/notebooks/00_setup.ipynb` as the source-of-truth structure and flow.
+- For new demos, copy `speech01/00_setup.ipynb` and only apply minimal demo-specific substitutions:
+	- demo kernel display name (for example `Python (<demo-name>)`)
+	- final "Continue with" notebook path/text when needed
+	- dependencies implied by each demo's own `requirements.txt`
+- DO NOT split or reorder the setup flow steps unless explicitly requested:
+	- Step 1: create venv + register kernel
+	- Step 2: authenticate Azure + optional subscription selection
+	- Step 3: install dependencies from `requirements.txt`
+- Keep Azure CLI resolution behavior aligned with `speech01` helper pattern (resolve executable path only; auth flow in setup cells).
+
 ### Decision Order
 1. Fix in Bicep or shared infra source.
 2. Fix in shared helper/module used by multiple notebooks.

@@ -1,0 +1,27 @@
+{
+  "demo_name": "cu01-foundry-video",
+  "problem_statement": "Analyze video content at scale using AI — extract transcripts, scene descriptions, and keyframes for RAG ingestion or media asset management.",
+  "hypothesis": "Azure AI Content Understanding can efficiently process video files with GPT-4.1 backing, providing structured output (transcriptions, keyframes, scene descriptions) useful for content search and retrieval.",
+  "customer_scenario": "Media companies, educators, and enterprises need to index and search large video libraries. Content Understanding automates video analysis to produce searchable metadata and segment descriptions.",
+  "status": "development",
+  "owner": "prototype-engineering",
+  "technologies": [
+    "bicep",
+    "json",
+    "python",
+    "jupyter",
+    "azure-identity",
+    "requests",
+    "python-dotenv",
+    "azure-ai-contentunderstanding"
+  ],
+  "azure_services": [
+    "Azure AI Foundry",
+    "Azure AI Services (AIServices account)",
+    "Azure AI Content Understanding"
+  ],
+  "data_requirements": "User provides local video clip (<1 min, <200 MB). No production data required.",
+  "security_notes": "Uses managed identity only (disableLocalAuth: true). No keys stored in env files. RBAC for deployer principal set at deployment time.",
+  "setup_time_estimate": "20–25 minutes",
+  "last_updated": "2026-06-22"
+}
