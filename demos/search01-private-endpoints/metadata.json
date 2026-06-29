@@ -1,0 +1,28 @@
+{
+  "demo_name": "search01-private-endpoints",
+  "problem_statement": "Recreate Azure Search data source/index/indexer notebook flow while keeping Search and Blob private-only from initial deployment.",
+  "hypothesis": "AAD-authenticated P2S VPN plus private DNS forwarding enables end-to-end private Search indexing from local notebooks without keys.",
+  "customer_scenario": "Engineers validating fully private Azure AI Search ingestion against Blob storage with managed identity only.",
+  "status": "development",
+  "owner": "prototype-engineering",
+  "technologies": [
+    "bicep",
+    "python",
+    "jupyter",
+    "azure-identity",
+    "azure-search-documents",
+    "azure-storage-blob"
+  ],
+  "azure_services": [
+    "Azure AI Search",
+    "Azure Storage",
+    "Azure Virtual Network",
+    "Azure VPN Gateway",
+    "Azure Private Link",
+    "Azure Private DNS"
+  ],
+  "data_requirements": "NASA earth book PDFs from Azure-Samples/azure-search-sample-data.",
+  "security_notes": "Search disableLocalAuth=true, Storage allowSharedKeyAccess=false, both publicNetworkAccess disabled, AAD/MI only.",
+  "setup_time_estimate": "45-70 minutes",
+  "last_updated": "2026-06-29"
+}

@@ -1,0 +1,639 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.44.1.10279",
+      "templateHash": "12601180106683127191"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "eastus2",
+      "metadata": {
+        "description": "Azure region for all resources"
+      }
+    },
+    "demoId": {
+      "type": "string",
+      "defaultValue": "search01-private-endpoints",
+      "metadata": {
+        "description": "Demo ID used for naming"
+      }
+    },
+    "tenantId": {
+      "type": "string",
+      "metadata": {
+        "description": "AAD tenant ID for VPN auth settings"
+      }
+    },
+    "deployerPrincipalId": {
+      "type": "string",
+      "metadata": {
+        "description": "Object ID of signed-in deployer for RBAC assignments"
+      }
+    },
+    "vpnClientAddressPool": {
+      "type": "string",
+      "defaultValue": "172.16.201.0/24",
+      "metadata": {
+        "description": "P2S VPN client address pool"
+      }
+    },
+    "vnetAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.50.0.0/16",
+      "metadata": {
+        "description": "VNet CIDR"
+      }
+    },
+    "privateEndpointSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.50.1.0/24",
+      "metadata": {
+        "description": "Private endpoint subnet CIDR"
+      }
+    },
+    "dnsSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.50.2.0/24",
+      "metadata": {
+        "description": "DNS forwarder subnet CIDR"
+      }
+    },
+    "gatewaySubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.50.255.0/27",
+      "metadata": {
+        "description": "Gateway subnet CIDR"
+      }
+    },
+    "adminPublicKey": {
+      "type": "string",
+      "defaultValue": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCtdaFMV58WOhoND+sYs4saGP9IYkO/g11xGKL/99qIm88MODhNi4O4Lx3BZPX7ntnjm/MyqfPKozt2GUpfvR8lZ84FxcUwFTKPwsc6oY+G7dmL7bbE7etRQqWR5CUTV0e7J3auG1yDG1u5LEaKlXOWRLBh5NVA2DhHSLXBBu4yWtb5sfGNk1CNXzwJGsooJZWOw/E60qeAaslAq3PysRA8fG7w6bmVvY5HnBMwyr+tLHYOaXAKBu5l0/6oWUPzP2bqgq1ngqrLpxdUdVLI41LEf1Od7JQz4SSK3YiRWAmwmRL8JBlf10L/e9PoFpaVA1fUL/serzIqU6doQlWFR2hh demo@search01",
+      "metadata": {
+        "description": "SSH public key for DNS VM admin account"
+      }
+    }
+  },
+  "variables": {
+    "uniqueSuffix": "[take(uniqueString(subscription().id, resourceGroup().id), 5)]",
+    "normalizedDemoId": "[toLower(replace(parameters('demoId'), '-', ''))]",
+    "storageAccountName": "[take(format('st{0}{1}', variables('normalizedDemoId'), variables('uniqueSuffix')), 24)]",
+    "searchServiceName": "[take(format('srch-{0}-{1}', variables('normalizedDemoId'), variables('uniqueSuffix')), 60)]",
+    "vnetName": "vnet-search01",
+    "vnetGatewayName": "vpngw-search01",
+    "containerName": "nasa",
+    "storageBlobDataReaderRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1')]",
+    "storageBlobDataContributorRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')]",
+    "searchServiceContributorRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7ca78c08-252a-4471-8644-bb5ff32d4ba0')]",
+    "searchIndexDataContributorRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '8ebe5a00-799e-43f5-93ac-243d3dce84a7')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2023-11-01",
+      "name": "[variables('vnetName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('vnetAddressPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "snet-pe",
+            "properties": {
+              "addressPrefix": "[parameters('privateEndpointSubnetPrefix')]",
+              "privateEndpointNetworkPolicies": "Disabled"
+            }
+          },
+          {
+            "name": "snet-dns",
+            "properties": {
+              "addressPrefix": "[parameters('dnsSubnetPrefix')]"
+            }
+          },
+          {
+            "name": "GatewaySubnet",
+            "properties": {
+              "addressPrefix": "[parameters('gatewaySubnetPrefix')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2023-11-01",
+      "name": "pip-search01-vpngw",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Static"
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworkGateways",
+      "apiVersion": "2023-11-01",
+      "name": "[variables('vnetGatewayName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "enableBgp": false,
+        "gatewayType": "Vpn",
+        "vpnType": "RouteBased",
+        "sku": {
+          "name": "VpnGw1",
+          "tier": "VpnGw1"
+        },
+        "ipConfigurations": [
+          {
+            "name": "gw-ipconfig",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'pip-search01-vpngw')]"
+              },
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), 'GatewaySubnet')]"
+              }
+            }
+          }
+        ],
+        "vpnClientConfiguration": {
+          "vpnAuthenticationTypes": [
+            "AAD"
+          ],
+          "vpnClientAddressPool": {
+            "addressPrefixes": [
+              "[parameters('vpnClientAddressPool')]"
+            ]
+          },
+          "vpnClientProtocols": [
+            "OpenVPN"
+          ],
+          "aadTenant": "[format('https://login.microsoftonline.com/{0}/', parameters('tenantId'))]",
+          "aadAudience": "c632b3df-fb67-4d84-bdcf-b95ad541b5c8",
+          "aadIssuer": "[format('https://sts.windows.net/{0}/', parameters('tenantId'))]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]",
+        "[resourceId('Microsoft.Network/publicIPAddresses', 'pip-search01-vpngw')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('storageAccountName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "allowBlobPublicAccess": false,
+        "allowSharedKeyAccess": false,
+        "defaultToOAuthAuthentication": true,
+        "minimumTlsVersion": "TLS1_2",
+        "publicNetworkAccess": "Disabled",
+        "supportsHttpsTrafficOnly": true
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2023-05-01",
+      "name": "[format('{0}/{1}', variables('storageAccountName'), 'default')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2023-05-01",
+      "name": "[format('{0}/{1}/{2}', variables('storageAccountName'), 'default', variables('containerName'))]",
+      "properties": {
+        "publicAccess": "None"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', variables('storageAccountName'), 'default')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Search/searchServices",
+      "apiVersion": "2023-11-01",
+      "name": "[variables('searchServiceName')]",
+      "location": "[parameters('location')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "sku": {
+        "name": "standard"
+      },
+      "properties": {
+        "disableLocalAuth": true,
+        "publicNetworkAccess": "disabled",
+        "semanticSearch": "free",
+        "replicaCount": 1,
+        "partitionCount": 1,
+        "hostingMode": "default"
+      }
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones",
+      "apiVersion": "2020-06-01",
+      "name": "privatelink.blob.core.windows.net",
+      "location": "global"
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones",
+      "apiVersion": "2020-06-01",
+      "name": "privatelink.search.windows.net",
+      "location": "global"
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+      "apiVersion": "2020-06-01",
+      "name": "[format('{0}/{1}', 'privatelink.blob.core.windows.net', 'link-vnet-search01')]",
+      "location": "global",
+      "properties": {
+        "virtualNetwork": {
+          "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+        },
+        "registrationEnabled": false
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', 'privatelink.blob.core.windows.net')]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+      "apiVersion": "2020-06-01",
+      "name": "[format('{0}/{1}', 'privatelink.search.windows.net', 'link-vnet-search01')]",
+      "location": "global",
+      "properties": {
+        "virtualNetwork": {
+          "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+        },
+        "registrationEnabled": false
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', 'privatelink.search.windows.net')]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints",
+      "apiVersion": "2023-11-01",
+      "name": "[format('pe-{0}-blob', variables('storageAccountName'))]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "subnet": {
+          "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), 'snet-pe')]"
+        },
+        "privateLinkServiceConnections": [
+          {
+            "name": "storage-blob-connection",
+            "properties": {
+              "privateLinkServiceId": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+              "groupIds": [
+                "blob"
+              ]
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+      "apiVersion": "2023-11-01",
+      "name": "[format('{0}/{1}', format('pe-{0}-blob', variables('storageAccountName')), 'default')]",
+      "properties": {
+        "privateDnsZoneConfigs": [
+          {
+            "name": "blob-zone-config",
+            "properties": {
+              "privateDnsZoneId": "[resourceId('Microsoft.Network/privateDnsZones', 'privatelink.blob.core.windows.net')]"
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', 'privatelink.blob.core.windows.net')]",
+        "[resourceId('Microsoft.Network/privateEndpoints', format('pe-{0}-blob', variables('storageAccountName')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints",
+      "apiVersion": "2023-11-01",
+      "name": "[format('pe-{0}-search', variables('searchServiceName'))]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "subnet": {
+          "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), 'snet-pe')]"
+        },
+        "privateLinkServiceConnections": [
+          {
+            "name": "search-service-connection",
+            "properties": {
+              "privateLinkServiceId": "[resourceId('Microsoft.Search/searchServices', variables('searchServiceName'))]",
+              "groupIds": [
+                "searchService"
+              ]
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Search/searchServices', variables('searchServiceName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+      "apiVersion": "2023-11-01",
+      "name": "[format('{0}/{1}', format('pe-{0}-search', variables('searchServiceName')), 'default')]",
+      "properties": {
+        "privateDnsZoneConfigs": [
+          {
+            "name": "search-zone-config",
+            "properties": {
+              "privateDnsZoneId": "[resourceId('Microsoft.Network/privateDnsZones', 'privatelink.search.windows.net')]"
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', 'privatelink.search.windows.net')]",
+        "[resourceId('Microsoft.Network/privateEndpoints', format('pe-{0}-search', variables('searchServiceName')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Search/searchServices/sharedPrivateLinkResources",
+      "apiVersion": "2023-11-01",
+      "name": "[format('{0}/{1}', variables('searchServiceName'), 'storage-blob-splr')]",
+      "properties": {
+        "privateLinkResourceId": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+        "groupId": "blob",
+        "requestMessage": "Allow Search managed identity blob access over shared private link for this demo."
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Search/searchServices', variables('searchServiceName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2023-11-01",
+      "name": "nsg-search01-dns",
+      "location": "[parameters('location')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "allow-dns-udp-from-vpn-pool",
+            "properties": {
+              "access": "Allow",
+              "direction": "Inbound",
+              "priority": 100,
+              "protocol": "Udp",
+              "sourceAddressPrefix": "[parameters('vpnClientAddressPool')]",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "53"
+            }
+          },
+          {
+            "name": "allow-dns-tcp-from-vpn-pool",
+            "properties": {
+              "access": "Allow",
+              "direction": "Inbound",
+              "priority": 110,
+              "protocol": "Tcp",
+              "sourceAddressPrefix": "[parameters('vpnClientAddressPool')]",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "53"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2023-11-01",
+      "name": "pip-search01-dns",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Static"
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2023-11-01",
+      "name": "nic-search01-dns",
+      "location": "[parameters('location')]",
+      "properties": {
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-search01-dns')]"
+        },
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), 'snet-dns')]"
+              },
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'pip-search01-dns')]"
+              }
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-search01-dns')]",
+        "[resourceId('Microsoft.Network/publicIPAddresses', 'pip-search01-dns')]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2023-09-01",
+      "name": "vm-search01-dns",
+      "location": "[parameters('location')]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "Standard_B2s"
+        },
+        "osProfile": {
+          "computerName": "vm-search01-dns",
+          "adminUsername": "azureuser",
+          "customData": "[base64('#cloud-config\npackage_update: true\npackages:\n  - dnsmasq\nwrite_files:\n  - path: /etc/dnsmasq.d/azure-forwarder.conf\n    permissions: \"0644\"\n    content: |\n      no-resolv\n      server=168.63.129.16\n      bind-interfaces\n      listen-address=0.0.0.0\nruncmd:\n  - systemctl enable dnsmasq\n  - systemctl restart dnsmasq\n')]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": true,
+            "ssh": {
+              "publicKeys": [
+                {
+                  "path": "/home/azureuser/.ssh/authorized_keys",
+                  "keyData": "[parameters('adminPublicKey')]"
+                }
+              ]
+            }
+          }
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "Canonical",
+            "offer": "0001-com-ubuntu-server-jammy",
+            "sku": "22_04-lts-gen2",
+            "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage",
+            "managedDisk": {
+              "storageAccountType": "Standard_LRS"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'nic-search01-dns')]",
+              "properties": {
+                "primary": true
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', 'nic-search01-dns')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+      "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), parameters('deployerPrincipalId'), 'StorageBlobDataContributor')]",
+      "properties": {
+        "principalId": "[parameters('deployerPrincipalId')]",
+        "roleDefinitionId": "[variables('storageBlobDataContributorRoleDefinitionId')]",
+        "principalType": "User"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.Search/searchServices', variables('searchServiceName'))]",
+      "name": "[guid(resourceId('Microsoft.Search/searchServices', variables('searchServiceName')), parameters('deployerPrincipalId'), 'SearchServiceContributor')]",
+      "properties": {
+        "principalId": "[parameters('deployerPrincipalId')]",
+        "roleDefinitionId": "[variables('searchServiceContributorRoleDefinitionId')]",
+        "principalType": "User"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Search/searchServices', variables('searchServiceName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.Search/searchServices', variables('searchServiceName'))]",
+      "name": "[guid(resourceId('Microsoft.Search/searchServices', variables('searchServiceName')), parameters('deployerPrincipalId'), 'SearchIndexDataContributor')]",
+      "properties": {
+        "principalId": "[parameters('deployerPrincipalId')]",
+        "roleDefinitionId": "[variables('searchIndexDataContributorRoleDefinitionId')]",
+        "principalType": "User"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Search/searchServices', variables('searchServiceName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+      "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), resourceId('Microsoft.Search/searchServices', variables('searchServiceName')), 'StorageBlobDataReader')]",
+      "properties": {
+        "principalId": "[reference(resourceId('Microsoft.Search/searchServices', variables('searchServiceName')), '2023-11-01', 'full').identity.principalId]",
+        "roleDefinitionId": "[variables('storageBlobDataReaderRoleDefinitionId')]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Search/searchServices', variables('searchServiceName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "storageAccountName": {
+      "type": "string",
+      "value": "[variables('storageAccountName')]"
+    },
+    "containerName": {
+      "type": "string",
+      "value": "[variables('containerName')]"
+    },
+    "storageAccountResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+    },
+    "searchServiceName": {
+      "type": "string",
+      "value": "[variables('searchServiceName')]"
+    },
+    "searchEndpoint": {
+      "type": "string",
+      "value": "[format('https://{0}.search.windows.net', variables('searchServiceName'))]"
+    },
+    "searchResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Search/searchServices', variables('searchServiceName'))]"
+    },
+    "vnetGatewayName": {
+      "type": "string",
+      "value": "[variables('vnetGatewayName')]"
+    },
+    "dnsForwarderPrivateIp": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', 'nic-search01-dns'), '2023-11-01').ipConfigurations[0].properties.privateIPAddress]"
+    },
+    "vnetId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+    },
+    "snetPePrefix": {
+      "type": "string",
+      "value": "[parameters('privateEndpointSubnetPrefix')]"
+    },
+    "vpnClientAddressPool": {
+      "type": "string",
+      "value": "[parameters('vpnClientAddressPool')]"
+    },
+    "resourceGroupName": {
+      "type": "string",
+      "value": "[resourceGroup().name]"
+    },
+    "tenantId": {
+      "type": "string",
+      "value": "[parameters('tenantId')]"
+    }
+  }
+}
