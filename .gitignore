@@ -41,3 +41,14 @@ outputs/generated/
 demos/**/functionapp/.python_packages/
 demos/**/outputs/functionapp-package.zip
 demos/**/outputs/*.zip
+
+# search01-private-endpoints: NASA earth book PDFs downloaded by 03_configure.ipynb
+demos/search01-private-endpoints/data/nasa/
+
+# search01-private-endpoints: DNS forwarder VM SSH public key (persisted so
+# redeploys reuse the same value — not a secret, but per-deployment).
+demos/search01-private-endpoints/env/dns_vm_key.pub
+
+# search01-private-endpoints: VPN client bundle downloaded from Azure
+# (contains per-deployment certificates and profile config).
+demos/search01-private-endpoints/outputs/vpn-client/

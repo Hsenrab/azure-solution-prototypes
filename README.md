@@ -81,6 +81,7 @@ Use `demo-template/metadata.json` as the baseline.
 | Folder | One-line purpose | Likely components | Notebook useful? | Infra needed? |
 |---|---|---|---|---|
 | `demos/foundry-model-notebook-sweden-central` | Deploy Azure AI Foundry model in Sweden Central and validate with a notebook prompt | Bicep, env template, notebook, quick-start scripts, architecture notes | Yes | Yes |
+| `demos/search01-private-endpoints` | Private-only Azure AI Search + Blob indexing over AAD P2S VPN and private endpoints | Bicep, networking, notebooks, env template, architecture notes | Yes | Yes |
 
 ## Copilot support
 
