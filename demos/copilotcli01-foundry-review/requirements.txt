@@ -1,0 +1,8 @@
+# Python dependencies for the copilotcli01-foundry-review demo notebooks.
+# The Function App container has its own requirements.txt in functionapp/.
+
+azure-identity>=1.17.0
+azure-storage-blob>=12.22.0
+ipywidgets>=8.1.0
+python-dotenv>=1.0.0
+requests>=2.31.0

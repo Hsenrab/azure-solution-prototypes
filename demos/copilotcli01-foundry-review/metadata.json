@@ -1,0 +1,31 @@
+{
+  "demo_name": "copilotcli01-foundry-review",
+  "problem_statement": "Teams want to trigger a GitHub Copilot CLI code review of a Git repository from a service endpoint, powered by their own Azure AI Foundry model deployment, without giving each user a GitHub Copilot subscription.",
+  "hypothesis": "A custom-container Python Azure Function hosting the @github/copilot CLI can perform a headless BYOK code review against a Foundry gpt-5.4-mini deployment (via COPILOT_PROVIDER_* env vars), invoked by a single button click from a notebook and returning inline markdown, without requiring any GitHub identity at runtime.",
+  "customer_scenario": "Platform teams that want a lightweight, internal 'review this repo' button backed by their own Foundry model, without deploying a Copilot subscription per user.",
+  "status": "development",
+  "owner": "prototype-engineering",
+  "technologies": [
+    "bicep",
+    "python",
+    "jupyter",
+    "azure-functions",
+    "docker",
+    "azure-container-registry",
+    "github-copilot-cli",
+    "azure-identity",
+    "ipywidgets",
+    "requests",
+    "python-dotenv"
+  ],
+  "azure_services": [
+    "Azure AI Foundry",
+    "Azure AI Services",
+    "Azure Functions (custom container, Elastic Premium)",
+    "Azure Container Registry"
+  ],
+  "data_requirements": "No production data. Reviews a hardcoded public sample repository (default: Hsenrab/CodeReviewExample) shallow-cloned into /tmp inside the container.",
+  "security_notes": "Prototype only. Function endpoint is protected by a function key. Scoped exception to the repo's MI-only convention: the AIServices account has disableLocalAuth=false so the Copilot CLI can present a static API key header (its BYOK mode cannot use AAD tokens). Function App still uses managed identity for ACR image pull and Function storage. Do not commit env/.env or any captured review output that may include sensitive repo content.",
+  "setup_time_estimate": "25-35 minutes",
+  "last_updated": "2026-07-14"
+}

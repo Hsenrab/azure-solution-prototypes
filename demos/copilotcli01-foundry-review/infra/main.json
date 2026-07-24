@@ -1,0 +1,405 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.45.15.27210",
+      "templateHash": "3405118006265408325"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "eastus2",
+      "metadata": {
+        "description": "Azure region for resources"
+      }
+    },
+    "demoId": {
+      "type": "string",
+      "defaultValue": "copilotcli01",
+      "metadata": {
+        "description": "Demo ID used for unique naming"
+      }
+    },
+    "uniqueSuffix": {
+      "type": "string",
+      "defaultValue": "[uniqueString(subscription().id, resourceGroup().id)]",
+      "metadata": {
+        "description": "Optional suffix to avoid naming collisions"
+      }
+    },
+    "projectDisplayName": {
+      "type": "string",
+      "defaultValue": "Copilot CLI Review Prototype Project",
+      "metadata": {
+        "description": "Display name for Foundry project"
+      }
+    },
+    "deploymentName": {
+      "type": "string",
+      "defaultValue": "gpt-5.4-mini",
+      "metadata": {
+        "description": "Foundry model deployment name — must be a chat/completions-capable OpenAI-format model that supports tool calling + streaming (>=128k context recommended). Validate current availability for the target region before deploying."
+      }
+    },
+    "modelName": {
+      "type": "string",
+      "defaultValue": "gpt-5.4-mini",
+      "metadata": {
+        "description": "Foundry model name (must match the deploymentName by convention for this demo). Validate against the region model catalog."
+      }
+    },
+    "modelVersion": {
+      "type": "string",
+      "defaultValue": "2026-03-17",
+      "metadata": {
+        "description": "Foundry model version — MUST validate the current non-deprecated version string for the target region before deployment. See `az cognitiveservices model list -l <region>`."
+      }
+    },
+    "deploymentCapacityK": {
+      "type": "int",
+      "defaultValue": 100,
+      "metadata": {
+        "description": "Model deployment capacity, in thousands of TPM. Set generously to avoid tripping the copilot-cli #3679 429-backoff bug."
+      }
+    },
+    "containerImageTag": {
+      "type": "string",
+      "defaultValue": "latest",
+      "metadata": {
+        "description": "Container image tag deployed to the Function App. Notebook 02 rebuilds this tag via `az acr build` and restarts the Function App."
+      }
+    },
+    "sampleRepoUrl": {
+      "type": "string",
+      "defaultValue": "https://github.com/Hsenrab/CodeReviewExample.git",
+      "metadata": {
+        "description": "Public sample repository the Function App clones and reviews. Keep it small to fit under the 230s Azure Load Balancer HTTP timeout."
+      }
+    },
+    "deployerPrincipalId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional principal object ID to grant AcrPush on the container registry for building images from the notebook. Leave empty to skip role assignment."
+      }
+    }
+  },
+  "variables": {
+    "normalizedDemoId": "[toLower(replace(parameters('demoId'), '-', ''))]",
+    "accountName": "[take(format('ai{0}{1}', variables('normalizedDemoId'), take(parameters('uniqueSuffix'), 5)), 24)]",
+    "projectName": "[format('proj-{0}', toLower(parameters('demoId')))]",
+    "acrName": "[take(format('acr{0}{1}', variables('normalizedDemoId'), take(parameters('uniqueSuffix'), 10)), 50)]",
+    "functionStorageName": "[take(format('stg{0}{1}', variables('normalizedDemoId'), take(parameters('uniqueSuffix'), 10)), 24)]",
+    "functionPlanName": "[take(format('plan-{0}-{1}', variables('normalizedDemoId'), take(parameters('uniqueSuffix'), 5)), 40)]",
+    "functionAppName": "[take(format('func-{0}-{1}', variables('normalizedDemoId'), take(parameters('uniqueSuffix'), 5)), 60)]",
+    "appInsightsName": "[take(format('appi-{0}-{1}', variables('normalizedDemoId'), take(parameters('uniqueSuffix'), 5)), 60)]",
+    "containerImageName": "copilot-review",
+    "containerImageReference": "[format('{0}.azurecr.io/{1}:{2}', variables('acrName'), variables('containerImageName'), parameters('containerImageTag'))]",
+    "storageBlobDataOwnerRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b')]",
+    "acrPullRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')]",
+    "acrPushRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '8311e382-0749-4cb8-b61a-304f252e45ec')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.CognitiveServices/accounts",
+      "apiVersion": "2025-06-01",
+      "name": "[variables('accountName')]",
+      "location": "[parameters('location')]",
+      "kind": "AIServices",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "sku": {
+        "name": "S0"
+      },
+      "properties": {
+        "allowProjectManagement": true,
+        "customSubDomainName": "[variables('accountName')]",
+        "disableLocalAuth": false,
+        "dynamicThrottlingEnabled": false,
+        "publicNetworkAccess": "Enabled",
+        "restrictOutboundNetworkAccess": false
+      }
+    },
+    {
+      "type": "Microsoft.CognitiveServices/accounts/projects",
+      "apiVersion": "2025-06-01",
+      "name": "[format('{0}/{1}', variables('accountName'), variables('projectName'))]",
+      "location": "[parameters('location')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "description": "Prototype project hosting the model the Copilot CLI uses via BYOK.",
+        "displayName": "[parameters('projectDisplayName')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts', variables('accountName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.CognitiveServices/accounts/deployments",
+      "apiVersion": "2024-10-01",
+      "name": "[format('{0}/{1}', variables('accountName'), parameters('deploymentName'))]",
+      "sku": {
+        "name": "GlobalStandard",
+        "capacity": "[parameters('deploymentCapacityK')]"
+      },
+      "properties": {
+        "model": {
+          "format": "OpenAI",
+          "name": "[parameters('modelName')]",
+          "version": "[parameters('modelVersion')]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts', variables('accountName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ContainerRegistry/registries",
+      "apiVersion": "2023-11-01-preview",
+      "name": "[variables('acrName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Basic"
+      },
+      "properties": {
+        "adminUserEnabled": false,
+        "publicNetworkAccess": "Enabled"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('functionStorageName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "allowBlobPublicAccess": false,
+        "allowSharedKeyAccess": false,
+        "defaultToOAuthAuthentication": true,
+        "minimumTlsVersion": "TLS1_2",
+        "supportsHttpsTrafficOnly": true
+      }
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2023-12-01",
+      "name": "[variables('functionPlanName')]",
+      "location": "[parameters('location')]",
+      "kind": "elastic",
+      "sku": {
+        "name": "EP1",
+        "tier": "ElasticPremium"
+      },
+      "properties": {
+        "reserved": true,
+        "maximumElasticWorkerCount": 3
+      }
+    },
+    {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "[variables('appInsightsName')]",
+      "location": "[parameters('location')]",
+      "kind": "web",
+      "properties": {
+        "Application_Type": "web"
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2023-12-01",
+      "name": "[variables('functionAppName')]",
+      "location": "[parameters('location')]",
+      "kind": "functionapp,linux,container",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('functionPlanName'))]",
+        "httpsOnly": true,
+        "siteConfig": {
+          "linuxFxVersion": "[format('DOCKER|{0}', variables('containerImageReference'))]",
+          "acrUseManagedIdentityCreds": true,
+          "alwaysOn": false,
+          "appSettings": [
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "~4"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "python"
+            },
+            {
+              "name": "AzureWebJobsStorage__credential",
+              "value": "managedidentity"
+            },
+            {
+              "name": "AzureWebJobsStorage__blobServiceUri",
+              "value": "[format('https://{0}.blob.{1}', variables('functionStorageName'), environment().suffixes.storage)]"
+            },
+            {
+              "name": "AzureWebJobsStorage__queueServiceUri",
+              "value": "[format('https://{0}.queue.{1}', variables('functionStorageName'), environment().suffixes.storage)]"
+            },
+            {
+              "name": "AzureWebJobsStorage__tableServiceUri",
+              "value": "[format('https://{0}.table.{1}', variables('functionStorageName'), environment().suffixes.storage)]"
+            },
+            {
+              "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+              "value": "[reference(resourceId('Microsoft.Insights/components', variables('appInsightsName')), '2020-02-02').ConnectionString]"
+            },
+            {
+              "name": "DOCKER_REGISTRY_SERVER_URL",
+              "value": "[format('https://{0}.azurecr.io', variables('acrName'))]"
+            },
+            {
+              "name": "WEBSITES_ENABLE_APP_SERVICE_STORAGE",
+              "value": "false"
+            },
+            {
+              "name": "COPILOT_PROVIDER_BASE_URL",
+              "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', variables('accountName')), '2025-06-01').endpoint]"
+            },
+            {
+              "name": "COPILOT_PROVIDER_TYPE",
+              "value": "azure"
+            },
+            {
+              "name": "COPILOT_PROVIDER_API_KEY",
+              "value": "[listKeys(resourceId('Microsoft.CognitiveServices/accounts', variables('accountName')), '2025-06-01').key1]"
+            },
+            {
+              "name": "COPILOT_MODEL",
+              "value": "[parameters('deploymentName')]"
+            },
+            {
+              "name": "SAMPLE_REPO_URL",
+              "value": "[parameters('sampleRepoUrl')]"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts/deployments', variables('accountName'), parameters('deploymentName'))]",
+        "[resourceId('Microsoft.CognitiveServices/accounts', variables('accountName'))]",
+        "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]",
+        "[resourceId('Microsoft.Web/serverfarms', variables('functionPlanName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('functionStorageName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.Storage/storageAccounts', variables('functionStorageName'))]",
+      "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', variables('functionStorageName')), resourceId('Microsoft.Web/sites', variables('functionAppName')), 'StorageBlobDataOwner')]",
+      "properties": {
+        "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('functionAppName')), '2023-12-01', 'full').identity.principalId]",
+        "roleDefinitionId": "[variables('storageBlobDataOwnerRoleDefinitionId')]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('functionAppName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('functionStorageName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.ContainerRegistry/registries', variables('acrName'))]",
+      "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', variables('acrName')), resourceId('Microsoft.Web/sites', variables('functionAppName')), 'AcrPull')]",
+      "properties": {
+        "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('functionAppName')), '2023-12-01', 'full').identity.principalId]",
+        "roleDefinitionId": "[variables('acrPullRoleDefinitionId')]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ContainerRegistry/registries', variables('acrName'))]",
+        "[resourceId('Microsoft.Web/sites', variables('functionAppName'))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(parameters('deployerPrincipalId')))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.ContainerRegistry/registries', variables('acrName'))]",
+      "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', variables('acrName')), parameters('deployerPrincipalId'), 'AcrPush')]",
+      "properties": {
+        "principalId": "[parameters('deployerPrincipalId')]",
+        "roleDefinitionId": "[variables('acrPushRoleDefinitionId')]",
+        "principalType": "User"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ContainerRegistry/registries', variables('acrName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "location": {
+      "type": "string",
+      "value": "[parameters('location')]"
+    },
+    "resourceGroupName": {
+      "type": "string",
+      "value": "[resourceGroup().name]"
+    },
+    "aiServicesAccountName": {
+      "type": "string",
+      "value": "[variables('accountName')]"
+    },
+    "aiServicesEndpoint": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', variables('accountName')), '2025-06-01').endpoint]"
+    },
+    "foundryProjectName": {
+      "type": "string",
+      "value": "[variables('projectName')]"
+    },
+    "aiDeploymentName": {
+      "type": "string",
+      "value": "[parameters('deploymentName')]"
+    },
+    "acrName": {
+      "type": "string",
+      "value": "[variables('acrName')]"
+    },
+    "acrLoginServer": {
+      "type": "string",
+      "value": "[format('{0}.azurecr.io', variables('acrName'))]"
+    },
+    "containerImageName": {
+      "type": "string",
+      "value": "[variables('containerImageName')]"
+    },
+    "containerImageReference": {
+      "type": "string",
+      "value": "[variables('containerImageReference')]"
+    },
+    "functionAppName": {
+      "type": "string",
+      "value": "[variables('functionAppName')]"
+    },
+    "functionUrl": {
+      "type": "string",
+      "value": "[format('https://{0}.azurewebsites.net/api/review', variables('functionAppName'))]"
+    },
+    "appInsightsName": {
+      "type": "string",
+      "value": "[variables('appInsightsName')]"
+    },
+    "sampleRepoUrl": {
+      "type": "string",
+      "value": "[parameters('sampleRepoUrl')]"
+    }
+  }
+}
