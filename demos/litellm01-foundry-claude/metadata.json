@@ -1,0 +1,31 @@
+{
+  "demo_name": "litellm01-foundry-claude",
+  "problem_statement": "Developers want to use Claude Code's Anthropic Messages API against an Azure-hosted GPT-5.4 model without managing a local model adapter.",
+  "hypothesis": "A publicly reachable LiteLLM proxy on Azure Container Apps can translate Claude Code requests to a Foundry GPT-5.4 deployment and return a single generated proxy URL, model name, and API key that Claude Code can use directly.",
+  "customer_scenario": "Teams standardizing on Claude Code workflows while routing requests through Azure AI Foundry models and Azure-controlled credentials.",
+  "status": "development",
+  "owner": "prototype-engineering",
+  "technologies": [
+    "bicep",
+    "python",
+    "jupyter",
+    "azure-container-apps",
+    "azure-container-registry",
+    "litellm",
+    "claude-code",
+    "azure-identity",
+    "requests",
+    "python-dotenv"
+  ],
+  "azure_services": [
+    "Azure AI Foundry",
+    "Azure AI Services",
+    "Azure Container Apps",
+    "Azure Container Registry",
+    "Azure Log Analytics"
+  ],
+  "data_requirements": "No production data. The test uses a synthetic prompt and does not persist request content.",
+  "security_notes": "Prototype only. The public proxy is protected by a generated LiteLLM master key, but it is internet-facing and uses a provider API key in a Container App secret. Do not commit env/.env. Rotate both keys and add stronger identity, rate limiting, and network controls before production use.",
+  "setup_time_estimate": "20-30 minutes",
+  "last_updated": "2026-08-04"
+}
