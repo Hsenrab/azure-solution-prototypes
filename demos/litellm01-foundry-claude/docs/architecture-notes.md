@@ -10,7 +10,7 @@ Claude Code
   -> Foundry GPT-5.4 deployment
 ```
 
-LiteLLM exposes the Anthropic Messages API and translates requests to the Azure OpenAI-compatible provider. The public Container App uses a generated proxy master key, while the Foundry account key is stored as a Container App secret and injected into the LiteLLM process.
+LiteLLM exposes the Anthropic Messages API and translates requests to the Azure OpenAI-compatible provider. The public Container App uses a generated proxy master key, while the Foundry account key and PostgreSQL `DATABASE_URL` are stored as Container App secrets. PostgreSQL stores LiteLLM authentication state required to validate bearer keys.
 
 ## Model contract
 

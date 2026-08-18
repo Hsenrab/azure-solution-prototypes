@@ -1,10 +1,9 @@
 model_list:
   - model_name: azure-gpt-5.4
     litellm_params:
-      model: azure/${AZURE_MODEL_DEPLOYMENT}
+      model: os.environ/AZURE_MODEL_DEPLOYMENT
       api_base: os.environ/AZURE_API_BASE
       api_key: os.environ/AZURE_API_KEY
-      api_version: os.environ/AZURE_API_VERSION
 
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY

@@ -14,10 +14,13 @@ If LiteLLM is hosted behind a public HTTPS Azure Container App, configured with 
 - Foundry project and a parameterized `gpt-5.4` `GlobalStandard` deployment.
 - Basic Azure Container Registry for the custom LiteLLM image.
 - Azure Container Apps environment with Log Analytics.
+- Azure Database for PostgreSQL Flexible Server (`Standard_B1ms`, 32 GiB, no HA) for LiteLLM authentication state.
 - Public HTTPS Container App running LiteLLM on port 4000.
 - LiteLLM model alias `azure-gpt-5.4`, exposed through `/v1/messages`.
 
-The Foundry account deliberately has `disableLocalAuth: false`: LiteLLM needs the account API key for this API-key-enabled prototype. The key is retrieved after the first deployment and passed as a Container App secret; it is never stored in Bicep source.
+The Foundry account deliberately has `disableLocalAuth: false`: LiteLLM needs the account API key for this API-key-enabled prototype. The key is retrieved after the first deployment and passed as a Container App secret; it is never stored in Bicep source. PostgreSQL is required by the current LiteLLM image for bearer-key authentication, including `/v1/messages`.
+
+The PostgreSQL configuration is intentionally the lowest-cost practical prototype shape: Burstable `Standard_B1ms`, 32 GiB storage, seven-day backup retention, no high availability, and public access limited to Azure services. It is not a production database configuration.
 
 ## Quick start
 
@@ -25,7 +28,7 @@ Run notebooks in order with the demo kernel:
 
 1. `notebooks/00_setup.ipynb` creates the virtual environment, logs into Azure, and installs the notebook requirements.
 2. `notebooks/01_deploy_infra.ipynb` validates the model parameters, deploys Foundry and the Container Apps environment, builds the LiteLLM image in ACR, enables the public proxy, and writes the URL and keys to `env/.env`.
-3. `notebooks/02_configure.ipynb` checks public HTTPS health and confirms `azure-gpt-5.4` appears in `/v1/models`.
+3. `notebooks/02_configure.ipynb` checks public HTTPS health and sends an authenticated Claude-compatible `/v1/messages` request.
 4. `notebooks/03_test.ipynb` sends an Anthropic Messages API request and saves the response to `outputs/last-message.json`.
 5. `notebooks/X_destroy.ipynb` deletes the resource group and purges the soft-deleted Foundry account.
 
