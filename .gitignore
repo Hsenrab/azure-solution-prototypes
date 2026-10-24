@@ -36,6 +36,7 @@ out/
 
 # Demo outputs that may be regenerated
 outputs/generated/
+demos/**/outputs/generated/
 
 # Azure Function deployment artifacts (generated)
 demos/**/functionapp/.python_packages/

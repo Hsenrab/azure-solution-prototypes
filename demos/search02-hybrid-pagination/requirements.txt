@@ -1,0 +1,6 @@
+azure-identity==1.25.3
+azure-mgmt-resource==26.0.0
+azure-mgmt-resource-deployments==2.0.0
+azure-search-documents==12.0.0
+python-dotenv==1.2.2
+ipykernel==7.3.0

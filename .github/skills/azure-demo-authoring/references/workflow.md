@@ -50,3 +50,25 @@ value = result.stdout.strip()
 ```
 
 Do not extract this into a shared helper function — keep each notebook cell self-contained even if the pattern repeats.
+
+## Scoped Azure Policy review
+
+Include inherited assignments explicitly with the `atScope()` filter; disabling
+strict scope matching alone does not reliably include management-group assignments.
+Resolve initiatives, member definitions, effective parameters/effects, exemptions,
+exclusions, overrides, and enforcement before approving an access pattern.
+
+On Windows PowerShell, use stop-parsing with environment variables so `az.cmd`
+receives the quoted parentheses intact:
+
+```powershell
+$env:AZURE_SUBSCRIPTION_ID = '<confirmed-subscription-id>'
+$env:AZURE_POLICY_SCOPE = "/subscriptions/$env:AZURE_SUBSCRIPTION_ID"
+az --% policy assignment list --subscription %AZURE_SUBSCRIPTION_ID% --scope %AZURE_POLICY_SCOPE% --filter "atScope()" --disable-scope-strict-match true --output json
+az --% policy exemption list --subscription %AZURE_SUBSCRIPTION_ID% --scope %AZURE_POLICY_SCOPE% --filter "atScope()" --disable-scope-strict-match true --output json
+```
+
+Repeat for the intended/actual resource-group scope. An empty unfiltered result is
+not proof of no inherited restrictions. Use the definition's actual management-group,
+subscription, or built-in scope when resolving it; current CLI `show` commands use
+`--name` and scope arguments rather than assuming `--id` is supported.

@@ -1,0 +1,20 @@
+{
+  "demo_name": "search02-hybrid-pagination",
+  "problem_statement": "Azure AI Search hybrid result counts can exceed the results available through pagination.",
+  "hypothesis": "One Bicep-defined keyless Search environment can provide a repeatable, authorized foundation for comparing Python and .NET reproduction clients.",
+  "customer_scenario": "Prepare an isolated environment for investigating a reported maths search count of 6,158 and an earlier pagination boundary.",
+  "status": "validated",
+  "owner": "Unassigned; assign a demo owner before shared use.",
+  "technologies": [
+    "Python 3.11+",
+    "Bicep",
+    "Azure CLI"
+  ],
+  "azure_services": [
+    "Azure AI Search"
+  ],
+  "data_requirements": "Feature 1 creates no index or documents. Feature 2 will use synthetic data only.",
+  "security_notes": "Infrastructure deployment, unchanged-input redeployment, same-user metadata access, and confirmed whole-group cleanup validated. Basic 1/1, North Europe, public endpoint, Entra user authorization only, keys disabled. Latest lifecycle deleted; readiness historical and export stale. Feature 2 and bug reproduction remain unimplemented.",
+  "setup_time_estimate": "20-30 minutes, excluding access, registration, capacity, or policy blockers; estimate not measured.",
+  "last_updated": "2026-10-23"
+}
