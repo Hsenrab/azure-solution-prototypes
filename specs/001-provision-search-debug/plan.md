@@ -140,14 +140,19 @@ See [research](./research.md) for sources and alternatives.
 1. **Setup**: Copy the canonical speech setup notebook, changing only kernel name,
    continuation text, and demo dependencies. Preserve environment/kernel, Azure
    authentication/subscription selection, and dependency-installation order.
-2. **Inputs and policy review**: Explicitly resolve the subscription, tenant, signed-in
+2. **Inputs and deployment validation**: Explicitly resolve the subscription, tenant, signed-in
    user, resource-group name, location, and deployment name. Prefer an explicit
    `AZURE_SUBSCRIPTION_ID` when supplied; otherwise confirm the CLI selection.
    Use CLI account context and signed-in-user lookup for the actual setup user;
    do not select the first subscription or switch identities.
-   Perform the required read-only CLI policy review at subscription and intended
-   target scope, including initiatives, parameters, effects, and exemptions.
-   A future resource group's absence is not evidence of policy permission.
+   Align CLI context to an explicit kernel `AZURE_SUBSCRIPTION_ID` when needed,
+   then reread the selected account before resolving the user and tenant.
+   Use Azure validation/what-if against the actual template and selected scope;
+   no manual policy-review file gates deployment, export, or readiness. A complete
+   advisory-policy audit is optional, not implied by successful validation.
+   As approved on 2026-10-28, no prerequisite/deployment confirmation flags remain;
+   deliberately running the paid-deployment step submits it. Preserve validation,
+   provider-registration, ownership, and SDK error checks.
 3. **Ownership boundary**: Choose a fixed demo group name such as
    `rg-search02-hybrid-pagination-ne`. On first use, an existing unrelated group is a
    conflict, not an invitation to adopt it. A demo ownership tag with stable value
@@ -213,7 +218,7 @@ See [research](./research.md) for sources and alternatives.
 | FR-007, FR-008 | Required non-secret outputs and language-neutral environment contract |
 | FR-010, FR-013 | Zero indexes/documents, no reproduction search requests; accurate readiness result |
 | FR-012 | Reviewed canonical destroy steps, correct CLI context, group absence |
-| FR-014, FR-015 | Explicit failures and current scoped CLI policy-review evidence |
+| FR-014, FR-015 | Raw Azure validation/what-if failures and actual saved preview; no manual review-file dependency |
 
 Static checks must inspect compiled resource properties/counts and actual notebook
 operations, not merely assert that files exist. Use existing tools; do not introduce

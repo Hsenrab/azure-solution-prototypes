@@ -56,7 +56,7 @@ do not manually edit it to repair a deployment or retain stale success evidence.
 
 ## Readiness Evidence
 
-Record the reviewed policy scope/time, subscription/group/service IDs, actual
+Record the subscription/group/service IDs, actual
 provisioning/security/capacity settings, operator tenant/object ID, assignment IDs,
 metadata status, SDK/API versions, observation time (`observedAt`, UTC), and
 zero-index/document counters from the SDK's supported statistics model.
@@ -66,10 +66,13 @@ Include a clear overall status:
 Evidence is local and generated, for example under `outputs/generated/`, already
 ignored by the repository. It must not contain access tokens or request auth headers.
 Document-operation validation remains `deferred-to-feature-2`, not `passed`.
+Azure deployment validation/what-if precedes deployment; save the actual preview
+as `outputs/generated/what-if.json`. No manually maintained policy-review file is
+an input to export or readiness, and those records do not claim a full policy audit.
 
 ## Lifecycle
 
-`specified -> policy-reviewed -> prerequisites-ready -> deploying -> deployed -> ready`
+`specified -> prerequisites-ready -> validated/previewed -> deploying -> deployed -> ready`
 
 - Compilation/validation failure prevents deployment.
 - A resource or permission failure produces `failed` or `blocked`, not `ready`.

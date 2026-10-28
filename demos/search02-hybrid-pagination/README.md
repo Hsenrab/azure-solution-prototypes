@@ -30,12 +30,18 @@ does not reproduce the discrepancy.**
   and permission to create the required service-scoped role assignments. Contributor
   alone does not grant role-assignment write permission.
 - Explicitly select the subscription with `az account set --subscription <id>`.
-  When `AZURE_SUBSCRIPTION_ID` is supplied, the notebook requires CLI context to
-  match it. It never chooses the first enabled subscription or another identity.
-- Recheck applicable policy assignments, initiative definitions, parameters/effects,
-  exemptions/exclusions, enforcement, and visibility gaps at the intended scope.
-  Follow the [scoped CLI review guide](../../specs/001-provision-search-debug/quickstart.md#2-review-azure-policy-and-provider-state).
-  Earlier read-only findings are not current deployment authorization.
+  When `AZURE_SUBSCRIPTION_ID` is supplied in the kernel environment, deployment
+  and readiness automatically run `az account set` if needed, reread the selected
+  account, and validate context before continuing. This changes the CLI default
+  for other terminals/notebooks too. Without that variable they use the current
+  CLI selection; they never choose the first enabled subscription or sign in as
+  another identity. The generated `env/.env` is an output, not an automatically
+  loaded deployment input; editing it does not refresh the kernel environment.
+- Run the notebook's Azure deployment validation and what-if for the selected
+  template and subscription before deployment. They check applicable enforced
+  deployment policies, not a full audit of advisory policies. Resolve raw policy
+  or permission errors; do not bypass them or change networking/authentication
+  automatically. No manually maintained policy-review file is required.
 - Review actual pricing/capacity before paid execution. Planning found an indicative
   Basic meter of USD 0.101/hour, **not a guaranteed regional quote**.
   Billing continues while the service exists, including idle time. No automatic
@@ -48,26 +54,12 @@ registration approval**, if needed:
 az provider register --namespace Microsoft.Search --subscription '<confirmed-id>' --wait
 ```
 
-After completing the actual CLI policy review, save its evidence under ignored
-`outputs/generated/`. The notebook requires `policy-review.json` with this shape
-(replace every placeholder with actual reviewed facts, never a fabricated approval):
-
-```json
-{
-  "subscriptionId": "<confirmed-subscription-id>",
-  "scope": "/subscriptions/<confirmed-id>/resourceGroups/rg-search02-hybrid-pagination-ne",
-  "reviewedAt": "<actual-ISO-8601-review-time-with-UTC-offset>",
-  "decision": "<approved-public-keyless-only-after-review>",
-  "summary": "<assignments/initiatives/definitions, parameters/effects, enforcement and exemptions reviewed>",
-  "visibilityGaps": ["<actual limitations, or an empty array if none>"]
-}
-```
-
-Use `decision: "approved-public-keyless"` only if the reviewed restrictions permit
-the approved design. An absent future group is a visibility limitation: review
-inherited policies now and the actual group scope after creation. Resolve any
-decision-blocking gap before confirming current prerequisites. Keep raw CLI policy
-evidence beside this file; do not include credentials.
+The deployment notebook writes `outputs/generated/what-if.json` from the actual
+SDK preview. Export and readiness use actual deployment outputs and live resource
+checks; neither reads `policy-review.json`. Earlier manually generated policy
+snapshots may be kept as historical evidence, but do not gate another subscription.
+For an optional in-depth policy audit, follow the
+[scoped CLI review guide](../../specs/001-provision-search-debug/quickstart.md#2-review-azure-policy-and-provider-state).
 
 ## Notebook journey
 
@@ -99,8 +91,10 @@ outputs/    # screenshots and sample outputs
    authenticate/select the subscription, then install requirements in that order.
 2. Open [deployment](notebooks/01_deploy_infra.ipynb). Review the printed user/scope,
    complete the current prerequisites, compile, and inspect SDK validation/what-if.
-   `CONFIRM_CURRENT_PREREQUISITES` and `CONFIRM_DEPLOY` start **False**; confirm only
-   the explicitly approved action. Resource creation is defined in Bicep, not Python.
+   There are no prerequisite/deployment confirmation flags. Running **Explicitly
+   deploy the paid environment** submits the paid deployment after a successful
+   what-if. Review the target and preview before running it; avoid unattended
+   Run All. Resource creation is defined in Bicep, not Python.
 3. Successful deployment exports [the nine-key contract](env/.env.example) to
    `env/.env` in one UTF-8 write. Never populate that file manually.
 4. Read [the handoff](notebooks/02_configure.ipynb), then run

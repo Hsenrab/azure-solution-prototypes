@@ -12,6 +12,11 @@ The setup user's CLI identity is used explicitly through `AzureCliCredential`.
 Bind the credential to the selected subscription only; Azure CLI rejects token
 requests that specify both tenant and subscription. The account lookup and shared
 handoff validator independently verify the tenant and principal.
+Deployment and readiness align the CLI default to an explicitly supplied kernel
+`AZURE_SUBSCRIPTION_ID` using `az account set` only when needed. They reread the
+account after switching, reject an unsuccessful selection, and resolve the current
+tenant and signed-in user before SDK use. CLI errors remain visible. This changes
+the shared CLI default, not the login identity or any infrastructure settings.
 Search Service Contributor covers metadata/index management; Search Index Data
 Contributor covers future upload/query operations. No redundant Data Reader,
 Search managed identity, model deployment, application secret, or private network
@@ -22,6 +27,14 @@ environment-contract validation between export and readiness. It does not hide
 authentication, deployment, CLI errors, or fallback behavior.
 
 ## Handoff and validation
+
+Policy checking uses the notebook's existing Azure deployment validation and
+what-if against the selected subscription/template, followed by deliberately
+running the paid-deployment step. There are no prerequisite/deployment confirmation
+flags: running that step submits the deployment. A manually authored policy-review file is not
+required by deployment, export, or readiness. Azure errors remain visible; these
+checks do not claim a full advisory-policy audit or guaranteed deployment success.
+The preview writes `outputs/generated/what-if.json` from the actual SDK result.
 
 The deployment SDK consumes the compiled Bicep, waits for actual completion, then
 exports the [non-secret contract](../env/.env.example) in one write. Readiness

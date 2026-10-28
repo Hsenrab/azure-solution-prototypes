@@ -25,6 +25,11 @@ the symptom using Python and .NET against that same environment.
 - Q: Should this demo create and own a new dedicated resource group? -> A: Yes; create a new demo-only group and permit explicitly confirmed deletion of that group and its contents.
 - Q: Who should receive permission to create the demo index, upload dummy data, and run both language examples? -> A: The user who signs in during setup receives access and runs both Python and .NET clients locally.
 
+### Session 2026-10-28
+
+- Q: Should the notebook require a manually maintained policy-review approval file? -> A: No. Use Azure deployment validation and what-if before the paid-deployment step. Remove the file dependency from deployment, export, and readiness. A full advisory-policy audit is optional; enforced policy/permission errors still block deployment.
+- Q: Should prerequisite and deployment steps have confirmation flags? -> A: No. Remove both deployment-notebook flags; deliberately running the paid-deployment step submits it after successful validation/what-if. Preserve provider, ownership, and error checks. The canonical cleanup flow remains unchanged.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Provision One Shared Debugging Environment (Priority: P1)
@@ -53,8 +58,8 @@ required access without creating a search index or executing the reproduction.
    **When** provisioning fails, **Then** the failure remains visible and no successful
    environment handoff is reported.
 4. **Given** the confirmed deployment scope, **When** networking is selected,
-   **Then** read-only Azure CLI policy inspection has established applicable
-   constraints or explicitly identified gaps that block the decision.
+   **Then** Azure deployment validation and what-if check the actual template and
+   selected scope before running the paid-deployment step, without a manual review-file gate or confirmation flags.
 
 ---
 
@@ -126,8 +131,9 @@ verify the dedicated resources are gone while unrelated resources remain untouch
 - The setup user's tenant or principal cannot be resolved, or later execution uses
   another identity: stop with the underlying identity/access error rather than grant
   a different identity access or switch to application credentials.
-- Policy assignments or definitions cannot be fully inspected: record the access or
-  evidence gap; do not assume public access is permitted or private access is required.
+- Azure deployment validation or what-if reports a policy/permission error: stop
+  with the underlying failure; do not infer a compliant alternative or bypass it.
+  An optional policy audit with incomplete visibility must not claim full compliance.
 - The selected network path is unavailable: report the handoff as blocked rather
   than silently change network policy or enable key authentication.
 - Partial deployment: preserve failure information and provide the standard scoped
@@ -206,14 +212,13 @@ verify the dedicated resources are gone while unrelated resources remain untouch
 - **FR-014**: Failures and partial completion MUST remain visible. Notebook code MUST
   NOT silently change infrastructure policy or add fallback paths to mask deployment
   or access failures.
-- **FR-015**: Before selecting networking or authorizing deployment, read-only Azure
-  CLI checks MUST inspect applicable policy assignments, including inherited
-  assignments, their policy/initiative definitions, effective parameters/effects,
-  enforcement settings, and applicable exemptions/exclusions. Inspection MUST use
-  the explicitly confirmed subscription and intended resource-group scope when
-  known. Evidence MUST distinguish enforced restrictions from audit-only findings
-  and identify incomplete visibility. Existing demo settings or an empty compliance
-  report MUST NOT be treated as proof that the proposed deployment is allowed.
+- **FR-015**: Before paid deployment, the notebook MUST use Azure deployment
+  validation and what-if against the actual template and explicitly selected
+  subscription. Underlying policy/permission failures MUST remain blocking errors.
+  Deployment, output export, and readiness MUST NOT require a manually maintained
+  policy-review approval file. The actual what-if result MUST be saved locally.
+  These checks MUST NOT be described as a full audit of advisory policies or a
+  guarantee that deployment will succeed; an in-depth scoped CLI audit is optional.
 
 ### Key Entities
 
@@ -249,10 +254,10 @@ verify the dedicated resources are gone while unrelated resources remain untouch
   zero resources outside it.
 - **SC-006**: Feature 1 acceptance creates zero search indexes, uploads zero test
   documents, and makes zero reproduction search requests.
-- **SC-007**: Policy-check evidence records the confirmed scope, relevant effective
-  restrictions and exemptions, and any visibility gaps. Networking is not finalized
-  while a relevant restriction remains unresolved; deployed settings match the
-  resulting approved design and keep local/key authentication disabled.
+- **SC-007**: Azure validation/what-if runs against the selected template and scope,
+  saves its actual preview, and blocks deployment on errors without a manual
+  review-file prerequisite. Deployed settings match the approved public/keyless
+  design. No full advisory-policy compliance claim is made from those checks.
 
 ## Assumptions
 

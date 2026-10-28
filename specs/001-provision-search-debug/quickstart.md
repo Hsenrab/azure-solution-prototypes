@@ -1,7 +1,10 @@
 # Planned Validation Guide: Feature 1
 
-**Status**: Design only. The demo files below are planned, not yet implemented.
-Do not interpret commands or expected results as evidence that deployment has run.
+**Status**: Implemented. The current workflow uses Azure validation/what-if rather
+than a manually maintained policy-review approval file. Historical acceptance and
+the latest observed lifecycle are recorded in the
+[demo README](../../demos/search02-hybrid-pagination/README.md#validation-status).
+Do not interpret commands or expected results as evidence of a new deployment.
 
 ## Prerequisites and Approval
 
@@ -11,19 +14,28 @@ Do not interpret commands or expected results as evidence that deployment has ru
   the required service-scoped role assignments.
 - Approve the actual cost before execution: paid Basic, one search unit, North Europe.
   The indicative public lookup was USD 0.101/hour; reconfirm actual pricing.
-- Confirm provider registration and target-scope policy compatibility. Planning found
-  Microsoft.Search unregistered and did not change it.
+- Confirm provider registration; run the notebook's Azure validation/what-if for
+  the target scope before deployment. Resolve policy/permission errors rather than
+  bypassing them. No `policy-review.json` file is required.
 - No .NET installation or reproduction client is required for Feature 1 acceptance.
   The stable Python Search SDK is used only for read-only metadata readiness.
 
-## 1. Set Up the Planned Demo
+## 1. Set Up the Demo
 
-After implementation, open `demos/search02-hybrid-pagination/notebooks/00_setup.ipynb`.
+Open `demos/search02-hybrid-pagination/notebooks/00_setup.ipynb`.
 Run the canonical environment/kernel step, switch to that kernel, authenticate and
 select the subscription, then install the demo requirements. Do not reorder the steps.
 
 ## 2. Review Azure Policy and Provider State
 
+In the deployment notebook, confirm prerequisites, compile Bicep, and run
+**Validate and review what-if**. The SDK checks the actual template and selected
+subscription before the paid-deployment step, then saves `what-if.json`.
+Export and readiness do not read a manual policy-review file. A successful preview
+is not a full advisory-policy audit or guaranteed deployment success.
+
+The following deeper CLI policy inspection is **optional**, for investigating a
+restriction or auditing recommendations. It is not a notebook execution gate.
 Use PowerShell with an explicitly supplied subscription:
 
 ```powershell
@@ -37,13 +49,13 @@ az --% policy assignment list --subscription %AZURE_SUBSCRIPTION_ID% --scope %AZ
 az --% policy exemption list --subscription %AZURE_SUBSCRIPTION_ID% --scope %AZURE_POLICY_SCOPE% --filter "atScope()" --disable-scope-strict-match true --output json
 ```
 
-Follow the [shared scoped-policy procedure](../../.github/skills/azure-demo-authoring/references/workflow.md#scoped-azure-policy-review).
+For this optional audit, follow the [shared scoped-policy procedure](../../.github/skills/azure-demo-authoring/references/workflow.md#scoped-azure-policy-review).
 The explicit filter includes inherited assignments: identify those actually applicable to
 the intended group, resolve referenced initiatives and member definitions, apply
 parameters, enforcement modes, overrides, exclusions, and exemptions. Review region,
 SKU, authentication, and network restrictions; do not use a compliance-state summary
 or an empty result as automatic approval.
-Before deployment, review the intended target-group scope as well. If it does not
+For a complete audit, review the intended target-group scope as well. If it does not
 yet exist, record that limitation and review applicable inherited restrictions;
 validate actual target scope when the group exists.
 For that query, set `$env:AZURE_POLICY_SCOPE` to the full group resource ID and
@@ -57,8 +69,8 @@ provider if needed:
 az provider register --namespace Microsoft.Search --subscription $subscriptionId --wait
 ```
 
-This changes subscription state; it was not run during planning.
-Stop on policy conflict, registration failure, or missing permissions.
+This changes subscription state and is not authorized by reading this guide.
+Stop on Azure validation policy errors, registration failure, or missing permissions.
 
 ## 3. Compile and Review the Deployment
 
@@ -82,7 +94,10 @@ Stop if a proposed group already exists without valid demo ownership.
 
 ## 4. Deploy and Verify the Handoff
 
-Execute the approved deployment steps in `01_deploy_infra.ipynb`. Expect the SDK
+Review the selected target and preview, then deliberately execute the paid-deployment
+step in `01_deploy_infra.ipynb`. There are no prerequisite/deployment confirmation
+flags; running that step submits the deployment. Do not use unattended Run All.
+Expect the SDK
 deployment to complete, not merely return a polling handle. Check that `env/.env`
 was generated from outputs and matches the
 [handoff contract](./contracts/environment-handoff.md). Do not populate it manually.

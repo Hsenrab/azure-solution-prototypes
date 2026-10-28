@@ -11,7 +11,7 @@ import tempfile
 import time
 import unittest
 from datetime import datetime, timezone
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 from types import SimpleNamespace, TracebackType
 from typing import Any, Callable
 from urllib.parse import parse_qs, urlparse
@@ -187,14 +187,6 @@ class InfrastructureChecks(unittest.TestCase):
                     if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
                         self.assertNotIn(node.func.attr, forbidden)
 
-    def test_paid_execution_and_prerequisites_default_to_unconfirmed(self) -> None:
-        client = Mock()
-        with self.assertRaisesRegex(RuntimeError, "approval"):
-            exec(source("01_deploy_infra.ipynb", "## Step 5 - Explicitly deploy the paid environment"), {"deployments_client": client})
-        client.deployments.begin_create_or_update_at_subscription_scope.assert_not_called()
-        with self.assertRaisesRegex(RuntimeError, "prerequisites"):
-            exec(source("01_deploy_infra.ipynb", "## Step 2 - Confirm current policy, cost, permissions, and ownership"), {})
-
     def test_metadata_schema(self) -> None:
         template = json.loads((REPOSITORY / "demo-template" / "metadata.json").read_text())
         actual = json.loads((DEMO / "metadata.json").read_text())
@@ -279,8 +271,7 @@ class HandoffChecks(unittest.TestCase):
                 "deployment_parameters": {"location": "northeurope", "properties": {"mode": "Incremental", "template": json.loads((GENERATED / "main.json").read_text(encoding="utf-8")), "parameters": {"operatorObjectId": {"value": CONTEXT["operator_object_id"]}}}},
             }
             exec(source("01_deploy_infra.ipynb", "## Step 4 - Validate and review what-if"), state)
-            approved_deployment = source("01_deploy_infra.ipynb", "## Step 5 - Explicitly deploy the paid environment").replace("CONFIRM_DEPLOY = False", "CONFIRM_DEPLOY = True")
-            exec(approved_deployment, state)
+            exec(source("01_deploy_infra.ipynb", "## Step 5 - Explicitly deploy the paid environment"), state)
             exec(source("03_test.ipynb", "## Step 2 - Match the actual successful deployment and owned resources"), state)
             exec(source("03_test.ipynb", "## Step 3 - Inspect the two Bicep-owned role assignments"), state)
             self.assertEqual(len(state["role_evidence"]), 2)
@@ -341,7 +332,6 @@ class HandoffChecks(unittest.TestCase):
                 "generated": root / "outputs",
                 "deployment": SimpleNamespace(properties=SimpleNamespace(provisioning_state="Succeeded", outputs=OUTPUTS)),
                 "environment_from_outputs": environment_from_outputs,
-                "policy_review": {"mode": "synthetic-local-only"},
                 "json": json, "os": os, "datetime": datetime, "timezone": timezone,
             }
             exec(source("01_deploy_infra.ipynb", "## Step 6 - Export the non-secret handoff"), state)

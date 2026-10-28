@@ -21,6 +21,13 @@ export stale, and Feature 2 unimplemented. The canonical per-resource cleanup
 command's unsupported `--yes` warning is preserved in actual cleanup evidence;
 whole-group deletion and two independent absence checks succeeded.
 
+**Approved workflow amendment (2026-10-28)**: Azure validation/what-if replaces the
+manual policy-review file gate. Earlier policy reviews remain historical evidence,
+not required deployment/export/readiness inputs. The original task completion
+records describe the accepted run, not a new deployment of this amendment.
+The user also removed prerequisite/deployment confirmation flags: running the paid
+deployment step submits it after a successful preview. Canonical cleanup is unchanged.
+
 ## Format: `[ID] [P?] [Story] Description`
 
 - `[P]` means independent of other tasks in the same batch after its listed
@@ -111,7 +118,7 @@ deferred to Feature 2.
 ### Validation
 
 - [X] T020 [US2] Validate the exporter and readiness code in `demos/search02-hybrid-pagination/notebooks/01_deploy_infra.ipynb` and `demos/search02-hybrid-pagination/notebooks/03_test.ipynb` locally with disposable synthetic deployment outputs and statistics models matching the selected stable SDK: cover all nine correct keys, missing/empty/mismatched outputs, stale-output nonacceptance, wrong identity/scope, SDK exceptions, and absent/nonzero model counters; keep validation outside notebook happy-path cells and record results in `demos/search02-hybrid-pagination/outputs/generated/us2-local-validation.json` without adding a framework or live writes.
-- [X] T021 [US2] After the approved deployment/redeployment and local checks, execute the output-export/readiness steps in `demos/search02-hybrid-pagination/notebooks/01_deploy_infra.ipynb` and `demos/search02-hybrid-pagination/notebooks/03_test.ipynb`; record actual IDs/settings, policy review scope/time, metadata status, role targets, SDK/API versions, UTC observation time `observedAt`, and model counters in `demos/search02-hybrid-pagination/outputs/generated/readiness.json` using the data-model statuses `ready`, `blocked`, or `failed` and document-operation status `deferred-to-feature-2`; preserve underlying failures and do not claim readiness or reproduction while blocked.
+- [X] T021 [US2] After the approved deployment/redeployment and local checks, execute the output-export/readiness steps in `demos/search02-hybrid-pagination/notebooks/01_deploy_infra.ipynb` and `demos/search02-hybrid-pagination/notebooks/03_test.ipynb`; record actual IDs/settings, metadata status, role targets, SDK/API versions, UTC observation time `observedAt`, and model counters in `demos/search02-hybrid-pagination/outputs/generated/readiness.json` using the data-model statuses `ready`, `blocked`, or `failed` and document-operation status `deferred-to-feature-2`; preserve underlying failures and do not claim readiness or reproduction while blocked. Azure validation/what-if precedes deployment; readiness requires no manual policy-review file.
 
 **Checkpoint**: US2 accepts a usable infrastructure handoff, not proven document
 operations or the customer's pagination symptom. Do not delete later Feature 2

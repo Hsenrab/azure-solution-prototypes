@@ -112,8 +112,12 @@ already supported by the SDK, so it is not the chosen implementation.
 ## 5. Tenant Policy and Runtime Prerequisites
 
 **Decision**: Preserve the approved public endpoint with disabled local authentication.
-Recheck scoped policies before deployment; stop for user direction on any conflict.
-Explicitly require provider registration before resource deployment.
+As approved on 2026-10-28, use the notebook's Azure validation/what-if for the actual
+template and selected scope, not a manually maintained policy-review approval file.
+Stop for user direction on policy errors; do not automatically change the design.
+Provider registration is still required before resource deployment. A full CLI
+policy audit remains optional; the earlier detailed review below is historical
+research, not a file prerequisite for future runs.
 
 **Initial evidence (superseded)**: The earlier read-only CLI review found three
 initiatives with eleven database/SQL-related definitions and no exemptions. Its
