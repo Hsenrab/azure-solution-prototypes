@@ -16,6 +16,14 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+For a new or extended Azure demo in this repository, load
+`.github/skills/azure-demo-authoring/references/workflow.md` before planning.
+Carry concrete source paths, reuse/adapt/new decisions, and identity, network,
+deployment, and live-operation constraints into the plan. Generate additional
+design artifacts only when needed to resolve a real decision or validate the
+hypothesis; otherwise record them as deferred. The reference procedure governs
+demo planning where generic Spec Kit examples prescribe application scaffolding.
+
 ## Pre-Execution Checks
 
 **Check for extension hooks (before planning)**:
