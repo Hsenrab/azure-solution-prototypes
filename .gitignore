@@ -21,6 +21,9 @@ node_modules/
 build/
 dist/
 out/
+demos/search02-hybrid-pagination/app/dotnet/bin/
+demos/search02-hybrid-pagination/app/dotnet/obj/
+demos/search02-hybrid-pagination/.venv-preview/
 
 # Logs
 *.log

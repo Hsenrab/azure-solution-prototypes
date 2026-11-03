@@ -1,10 +1,22 @@
 # Feature Specification: Reproduce Hybrid Search Count/Pagination Discrepancy
 
-**Feature Branch**: Not created; specification directory is independent of the current branch.
+**Feature Branch**: `feat/search-hybrid-pagination-infra` (shared working branch;
+Spec Kit feature identity: `002-reproduce-hybrid-pagination`).
 
 **Created**: 2026-10-23
 
-**Status**: Draft - requirements reviewed; experiment not implemented or executed.
+**Status**: Implemented; live symptom reproduced in both clients. Full acceptance
+remains blocked by failed keyword complete-ID baselines (T029), not missing clients.
+
+**Validation record (2026-10-30)**: All six cases measured in ignored local run
+`demos/search02-hybrid-pagination/outputs/generated/reproduction/runs/20261030-live-v2/`.
+Both hybrid cases: count 6,158, 1,039 unique IDs, 208 populated and 1,024 empty
+advertised pages. Both vector cases: count/unique 50. Both keyword cases: 6,158
+rows, 6,111 unique IDs, 100% advertised-offset coverage; duplicate/missing IDs
+invalidate the required baseline. Actual requests/API and cross-client ID sets
+agreed. This establishes the symptom, not the customer cause or exact boundary.
+No data/sort change was made to force acceptance. See the demo's
+[validation record](../../demos/search02-hybrid-pagination/README.md#feature-2-live-observations---2026-10-30).
 
 **Depends On**: [Feature 1 - Provision Search Debug Environment](../001-provision-search-debug/spec.md).
 
@@ -69,6 +81,10 @@ corpus and record the count, unique IDs, and page boundaries it actually returns
 2. **Given** a fixed vector query and candidate limit,
    **When** the vector-only control runs, **Then** the evidence records its actual
    returned IDs, reported count when available, and overlap with keyword results.
+   If the initial count is unavailable, successful measurement of the configured
+   candidate-page budget and boundaries completes the control with outcome
+   `not-applicable`; it does not invent an advertised count or block the whole
+   demonstration solely because that optional count is absent.
 3. **Given** keyword-only, vector-only, and hybrid observations,
    **When** the findings are compared, **Then** the report distinguishes observations
    from hypotheses and states whether the evidence supports the proposed cause.
@@ -144,6 +160,13 @@ compare the two reports without rerunning infrastructure deployment.
 - Different client defaults, lazy iteration, or automatic continuation: distinguish
   requested logical pages from additional SDK requests; do not silently compare
   differently shaped requests or count automatic traversal as a five-result page.
+- A response with fewer than the requested five rows and continuation information:
+  preserve the actual response, stop the case as incomplete with reason
+  `service-continuation`, and do not treat it as an exhausted/empty page or
+  reproduction evidence. This applies to scans, probes, and repeats in both clients.
+- Missing initial count: blocks keyword/hybrid classification. Vector-only controls
+  may complete a clearly labeled candidate-limit scan with count/advertised-page
+  fields null and outcome `not-applicable`; failures still make them incomplete.
 - Multiple vector queries, filters, semantic reranking, and explicit sorting:
   excluded from the initial baseline, and documented as possible customer differences.
 
@@ -173,14 +196,24 @@ compare the two reports without rerunning infrastructure deployment.
 - **FR-007**: Every advertised page MUST be requested for a completed measurement.
   Evidence MUST record its page number, offset, returned size, IDs, reported count
   when present, and any request failure. Scanning MUST NOT stop at the first empty page.
+  A short/empty response with continuation information MUST instead stop the case
+  as incomplete with reason `service-continuation`, never establish exhaustion,
+  and never trigger hidden continuation requests.
 - **FR-008**: The summary MUST distinguish reported count, total returned rows,
   unique reachable IDs, duplicate IDs, advertised pages, populated pages, first empty
   advertised page, and last populated page. Count changes during a run MUST be flagged.
 - **FR-009**: Boundary evidence MUST show the last populated page, the immediately
   following page, and final advertised page where applicable. The same boundary
   requests MUST be repeated once with unchanged inputs to check repeatability.
+  For a vector control without an initial count, use the configured candidate-page
+  budget and its final scan page instead of inventing a final advertised page.
 - **FR-010**: The report MUST classify the outcome as reproduced, not reproduced,
   or blocked/incomplete, using the acceptance conditions in User Story 1.
+  Keyword and hybrid cases require an initial reported count. The sole exception
+  is a successfully measured vector-only control without that count: its status
+  is `complete`, outcome is `not-applicable`, and reported count and advertised-page
+  fields remain null. This exception MUST NOT override any failed/incomplete
+  request, count drift, or unfinished required scan/boundary measurement.
 - **FR-011**: The explanation MUST assess the hypothesis that counting all keyword
   matches can exceed the distinct hybrid candidate set available for paging.
   It MUST account for text/vector overlap and MUST NOT assume their sizes simply add.
@@ -230,9 +263,12 @@ compare the two reports without rerunning infrastructure deployment.
 
 - **SC-001**: The baseline accounts for all 6,158 expected keyword IDs, with no
   missing or duplicate IDs; failure is explicitly reported before cause attribution.
-- **SC-002**: For each completed query case, 100% of advertised pages have recorded
-  observations, and reported count, unique reachable count, and empty-page count
-  can be independently calculated from that evidence.
+- **SC-002**: For each completed query case with an initial reported count, 100%
+  of advertised pages have recorded observations, and reported count, unique
+  reachable count, and empty-page count can be independently calculated from
+  that evidence. A vector-only control without an initial count instead records
+  100% of its configured candidate-page budget; count-based fields/coverage stay
+  null, while actual rows, unique IDs, and candidate-page metrics remain measurable.
 - **SC-003**: A completed hybrid case produces an unambiguous reproduced or
   not-reproduced classification; every failed/incomplete case is distinguished from
   those outcomes.
@@ -247,14 +283,17 @@ compare the two reports without rerunning infrastructure deployment.
   cases, each with a completed outcome or an explicit blocked/unsupported status.
   Completion of the two-client demonstration requires all six cases to execute;
   unsupported cases remain gaps rather than successful demonstrations.
+  A successfully completed vector control with unavailable initial count uses
+  `not-applicable` as specified in FR-010 and is not an unsupported or missing case.
 - **SC-008**: One comparison accounts for every matched or unmatched query setting
   and states agreement or disagreement for reported counts, unique reachable counts,
   returned ID sets, and page boundaries.
 
 ## Assumptions
 
-- This phase creates specification and requirements only. It does not create demo
-  source, notebooks, datasets, infrastructure, an implementation plan, or Azure resources.
+- The initial specification-only phase created requirements without demo source,
+  datasets, or Azure resources. The subsequently approved [implementation plan](./plan.md)
+  records the design; planning does not authorize executing or deploying the experiment.
 - The user selected reproduction and explanation only. Preview count-scope changes,
   expanded recall comparisons, remediation implementation, production approval,
   GA alternatives, and GA-release timelines are out of scope for this first feature.
