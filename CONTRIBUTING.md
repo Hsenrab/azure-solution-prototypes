@@ -108,9 +108,17 @@ if result.returncode != 0:
 
 Use the same schema keys as `demo-template/metadata.json` so demos can be indexed consistently.
 
-## 8) Copilot usage
+## 8) Spec Kit workflow for demos
 
-Use these reusable prompts when creating/extending demos:
+Use Spec Kit for every new or extended demo. Before `/speckit-specify`, load
+`.github/skills/azure-demo-authoring/SKILL.md` and follow the single detailed
+procedure in `.github/skills/azure-demo-authoring/references/workflow.md`.
+Perform the bounded source discovery before drafting, then carry relevant paths
+and reuse decisions through Plan and Tasks. The repository's Spec Kit templates
+are in `.specify/templates/overrides/`.
 
-- `.github/prompts/create-new-demo.prompt.md`
-- `.github/prompts/extend-existing-demo.prompt.md`
+Use the existing demo template, notebooks, Bicep, helpers, and feature artifacts
+when compatible with the hypothesis and identity/network/deployment constraints.
+Keep each demo self-contained. Tasks should contain only necessary deltas,
+directly related documentation/metadata, and proportional validation. Preserve
+notebook hygiene checks and explicit approval for live Azure operations.

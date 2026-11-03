@@ -15,10 +15,12 @@ user-invocable: true
 
 ## Procedure
 1. Decide whether this is create or extend.
-2. Define one customer problem and one testable hypothesis.
-3. Apply the minimal change set required to validate that hypothesis.
-4. Keep docs and metadata aligned with scope.
-5. For Azure AI work, follow the Foundry standards reference.
+2. For every new or extended demo, follow the Spec Kit handoff in the workflow
+   reference, including bounded artifact discovery before Specify.
+3. Define one customer problem and one testable hypothesis.
+4. Apply the minimal change set required to validate that hypothesis.
+5. Keep docs and metadata aligned with scope.
+6. For Azure AI work, follow the Foundry standards reference.
 
 ## References
 - [Workflow checklist](./references/workflow.md)

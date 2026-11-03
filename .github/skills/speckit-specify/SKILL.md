@@ -16,6 +16,13 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+For a new or extended Azure demo in this repository, first load
+`.github/skills/azure-demo-authoring/SKILL.md` and follow its Spec Kit Workflow
+reference. Perform the bounded artifact discovery before drafting the
+specification; carry concise findings and compatibility boundaries into the spec.
+The reference procedure governs demo authoring where generic Spec Kit examples
+suggest greenfield implementation or exhaustive discovery.
+
 ## Pre-Execution Checks
 
 **Check for extension hooks (before specification)**:

@@ -16,6 +16,13 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+For Azure demo work in this repository, load
+`.github/skills/azure-demo-authoring/references/workflow.md` and implement only
+the approved tasks and reuse decisions. Do not initialize generic project
+scaffolding, add ignore files/frameworks/test suites, or run live Azure
+operations unless the plan and explicit user approval require them. Preserve
+existing quality gates, canonical notebook flows, and hypothesis validation.
+
 ## Pre-Execution Checks
 
 **Check for extension hooks (before implementation)**:
