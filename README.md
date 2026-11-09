@@ -88,7 +88,7 @@ Use `demo-template/metadata.json` as the baseline.
 - Repo-wide instructions: `.github/copilot-instructions.md`
 - Repository skill: `.github/skills/azure-demo-authoring/SKILL.md`
 
-## Notebook journey selection
+## Notebook journeys
 
 The **Notebook journey selection** workflow discovers demos from tracked
 `demos/*/notebooks/*.ipynb` paths. Main pushes select demos affected by
@@ -98,10 +98,11 @@ no demos. The complete push range is compared, including removed and renamed
 paths; demos with no remaining notebooks are reported but not scheduled.
 
 To run it manually, supply comma-separated demo folder names in `demos`, or
-select `all_demos`, but not both. Unknown names fail the run. Each selected
-demo gets a parallel placeholder job; no notebooks run and no Azure resources
-are provisioned in this stage. Future execution will run each demo's notebooks
-sequentially.
+select `all_demos`, but not both. Unknown names fail the run. Selected demos run
+in parallel with fail-fast disabled; each enabled demo runs its notebooks
+sequentially. `speech01-foundry-speech` is the current hosted-runner pilot.
+Other selected demos explicitly fail as unsupported and are not reported as
+passed. See that demo's README for its OIDC and Azure configuration.
 
 ## Recommendation notes
 
