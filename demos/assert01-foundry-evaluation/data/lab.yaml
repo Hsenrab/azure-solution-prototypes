@@ -1,0 +1,12 @@
+policy_path: policies/customer-support.yaml
+extra_tests_path: extra-tests.jsonl
+prompt_count: 8
+scenario_count: 4
+max_turns: 3
+generation_target: newer
+tester_target: newer
+judge_target: newer
+comparison_targets:
+  - older
+  - intermediate
+  - newer
