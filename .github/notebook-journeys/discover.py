@@ -24,6 +24,8 @@ def notebook_demos(ref):
 
 
 def is_documentation(path):
+    if path.endswith(".ipynb"):
+        return False
     parts = path.split("/")
     name = parts[-1].lower()
     return (
