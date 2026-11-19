@@ -1,6 +1,6 @@
 ---
 name: "speckit-plan"
-description: "Execute the implementation planning workflow using the plan template to generate design artifacts."
+description: "Plan the smallest prototype change and its validation; create separate design artifacts only when needed."
 compatibility: "Requires spec-kit project structure with .specify/ directory"
 metadata:
   author: "github-spec-kit"
@@ -16,13 +16,18 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
-For a new or extended Azure demo in this repository, load
-`.github/skills/azure-demo-authoring/references/workflow.md` before planning.
-Carry concrete source paths, reuse/adapt/new decisions, and identity, network,
-deployment, and live-operation constraints into the plan. Generate additional
+## Repository Scope
+
+Apply [the constitution](../../../.specify/memory/constitution.md) and
+[the Copilot guidance](../../copilot-instructions.md). For demo creation or extension,
+load `azure-demo-authoring` and its
+[Spec Kit workflow](../azure-demo-authoring/references/workflow.md#spec-kit-workflow)
+before planning. Carry concrete source paths, reuse/adapt/new decisions, and
+identity, network, deployment, and live-operation constraints into the plan.
+Use the existing demo layout and preserve its hard constraints. Create additional
 design artifacts only when needed to resolve a real decision or validate the
-hypothesis; otherwise record them as deferred. The reference procedure governs
-demo planning where generic Spec Kit examples prescribe application scaffolding.
+hypothesis. Reference reusable authoring procedures rather than copy them into
+feature artifacts; generic examples must not introduce application scaffolding.
 
 ## Pre-Execution Checks
 
@@ -66,13 +71,21 @@ demo planning where generic Spec Kit examples prescribe application scaffolding.
 
 2. **Load context**: Read FEATURE_SPEC and `.specify/memory/constitution.md`. Load IMPL_PLAN template (already copied).
 
-3. **Execute plan workflow**: Follow the structure in IMPL_PLAN template to:
-   - Fill Technical Context (mark unknowns as "NEEDS CLARIFICATION")
-   - Fill Constitution Check section from constitution
-   - Evaluate gates (ERROR if violations unjustified)
-   - Phase 0: Generate research.md (resolve all NEEDS CLARIFICATION)
-   - Phase 1: Generate data-model.md, contracts/, quickstart.md
-   - Re-evaluate Constitution Check post-design
+3. **Check readiness**: A separate `/speckit-clarify` run is not required.
+   Ask through `ask_user` only when an unresolved choice changes the hypothesis,
+   implementation, cost, or hard constraints. Pause on blocking decisions.
+
+4. **Plan the minimum change**:
+   - Fill Summary and Technical Context from the existing demo and agreed spec.
+   - Fill Constitution Check with applicable rules and skill/reference links.
+     Pause on violations unless the user explicitly approves a documented exception.
+   - Resolve only unknowns that block feasibility or implementation (see below).
+   - List the files to change and the smallest end-to-end implementation steps.
+   - Map the spec's acceptance criteria to the smallest relevant existing checks and
+     notebook scenario; distinguish planned checks from evidence already collected.
+   - Link existing run instructions rather than duplicate the demo README.
+   - Recheck constitution compliance after design. Significant strategy changes
+     require concise trade-offs and explicit user approval before implementation.
 
 ## Mandatory Post-Execution Hooks
 
@@ -111,64 +124,76 @@ Check if `.specify/extensions.yml` exists in the project root.
 
 ## Completion Report
 
-Command ends after Phase 1 design. Report branch, IMPL_PLAN path, and generated artifacts.
+Report branch, IMPL_PLAN path, minimal change scope, validation approach, and any
+blocking decisions. List supporting artifacts only if they were needed and created.
+Do not claim planned checks have run.
 
-## Phases
+## Reuse Working Demo Code First
 
-### Phase 0: Outline & Research
+- Search other demos for suitable notebook cells, helpers, and Bicep before planning
+  new code. Prefer copying working code as-is, with only necessary demo-specific
+  substitutions, over rewriting it.
+- Check that the source code fits the target demo's identity, network, deployment,
+  runtime, and dependency constraints. Do not copy incompatible behavior or change
+  those constraints merely to enable reuse.
+- In the plan, identify the source file/cell heading, destination, and necessary
+  substitutions. If suitable existing code is not reused, briefly explain why.
+- Keep demos self-contained. Do not refactor or introduce shared cross-demo
+  abstractions merely to avoid duplication. Preserve the mandated setup/destroy
+  notebook sources and their permitted substitutions.
+- Verify the reused code in the target demo's scenario; a working source demo is
+  not evidence that the copied code works in its new environment.
 
-1. **Extract unknowns from Technical Context** above:
-   - For each NEEDS CLARIFICATION → research task
-   - For each dependency → best practices task
-   - For each integration → patterns task
+## Research Only What Is Unresolved
 
-2. **Generate and dispatch research agents**:
+1. Reuse existing code, demo patterns, and applicable authoring references first.
+2. Research only unanswered capability, API/SDK compatibility, identity/network,
+   quota, or cost questions that affect feasibility or the chosen implementation.
+   Do not research every dependency or integration by default.
+3. Record concise decisions and supporting sources in `plan.md`. Use a separate
+   `research.md` only when substantial findings warrant it.
+4. Handle focused lookups directly. Do not automatically dispatch research agents;
+   delegate only when substantial separate context is necessary.
 
-   ```text
-   For each unknown in Technical Context:
-     Task: "Research {unknown} for {feature context}"
-   For each technology choice:
-     Task: "Find best practices for {tech} in {domain}"
-   ```
+## Verification Required; Automated Test Suites Optional
 
-3. **Consolidate findings** in `research.md` using format:
-   - Decision: [what was chosen]
-   - Rationale: [why chosen]
-   - Alternatives considered: [what else evaluated]
+- Default to running the notebook scenario and checking its expected outputs against
+  the hypothesis. This can be sufficient verification without adding test files.
+- Add automated tests only when explicitly requested or when specific nontrivial
+  introduced/fixed logic benefits from focused regression checks; explain that need
+  in the plan. Do not create a test suite just to satisfy a template or general practice.
+- Do not introduce coverage targets, test frameworks, or TDD as default requirements.
+- Run the smallest relevant existing checks and preserve existing CI/notebook hygiene
+  gates. Making new test files optional does not waive these checks or scenario validation.
+- Report checks actually run and their results. If Azure access or another prerequisite
+  blocks verification, report that limitation rather than claim the scenario passed.
 
-**Output**: research.md with all NEEDS CLARIFICATION resolved
+## Supporting Artifacts Are Optional
 
-### Phase 1: Design & Contracts
+`plan.md` is the only required planning output. Do not generate empty or ceremonial files.
+Create a supporting artifact only when it is needed to implement or validate the hypothesis:
 
-**Prerequisites:** `research.md` complete
+- `data-model.md`: nontrivial new data shapes, relationships, or state rules that
+  cannot be expressed clearly in a short plan section.
+- `contracts/`: a new or changed interface whose exact request/response format
+  needs an explicit agreement; do not restate an unchanged Azure API.
+- `quickstart.md`: a distinct validation guide not already covered by the demo
+  README or notebook journey.
+- `research.md`: substantial feasibility findings as described above.
 
-1. **Extract entities from feature spec** → `data-model.md`:
-   - Entity name, fields, relationships
-   - Validation rules from requirements
-   - State transitions if applicable
-
-2. **Define interface contracts** (if project has external interfaces) → `/contracts/`:
-   - Identify what interfaces the project exposes to users or other systems
-   - Document the contract format appropriate for the project type
-   - Examples: public APIs for libraries, command schemas for CLI tools, endpoints for web services, grammars for parsers, UI contracts for applications
-   - Skip if project is purely internal (build scripts, one-off tools, etc.)
-
-3. **Create quickstart validation guide** → `quickstart.md`:
-   - Document runnable validation scenarios that prove the feature works end-to-end
-   - Include prerequisites, setup commands, test/run commands, and expected outcomes
-   - Use links or references to contracts and data model details instead of duplicating them
-   - Do not include full implementation code, model/service/controller bodies, migrations, or complete test suites
-   - Keep this artifact as a validation/run guide; implementation details belong in `tasks.md` and the implementation phase
-
-**Output**: data-model.md, /contracts/*, quickstart.md
+When extending a demo, update directly related docs and metadata instead of
+creating parallel sources of truth. Preserve existing supporting artifacts and
+update them only where the agreed change affects their content.
 
 ## Key rules
 
 - Use absolute paths for filesystem operations; use project-relative paths for references in documentation
-- ERROR on gate failures or unresolved clarifications
+- Pause on unapproved constitution violations or unresolved blocking decisions.
+- Keep infrastructure/platform changes Bicep-first, notebooks small, and scenario
+  validation tied to the hypothesis. Do not weaken existing CI or notebook cleanup.
 
 ## Done When
 
-- [ ] Plan workflow executed and design artifacts generated
+- [ ] Minimal implementation plan written with applicable constitution checks and validation
 - [ ] Extension hooks dispatched or skipped according to the rules in Mandatory Post-Execution Hooks above
-- [ ] Completion reported to user with branch, plan path, and generated artifacts
+- [ ] Completion reported with branch, plan path, and any blockers or necessary supporting artifacts

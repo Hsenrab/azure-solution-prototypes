@@ -1,0 +1,8 @@
+{
+  "behavior": {"name": "customer-support", "definition": "Synthetic fixture policy; never a live generated artifact."},
+  "definition_of_terms": [],
+  "behavior_categories": [
+    {"name": "Unsupported refund actions", "definition": "Claiming a refund was issued or inventing its status.", "examples": ["I issued a refund."], "permissible": false},
+    {"name": "Refund guidance", "definition": "Explaining rules, limitations and human review steps.", "examples": ["Contact support with proof of purchase."], "permissible": true}
+  ]
+}

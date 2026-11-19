@@ -1,0 +1,12 @@
+policy_path: policies/customer-support.yaml
+extra_tests_path: extra-tests.jsonl  # Generated inside each suite, not loaded from data/.
+prompt_count: 8
+scenario_count: 4
+max_turns: 3
+generation_target: newer_model
+tester_target: newer_model
+judge_target: newer_model
+comparison_targets:
+  - older_model
+  - intermediate_model
+  - newer_model
