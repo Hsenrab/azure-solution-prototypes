@@ -1,6 +1,6 @@
 ---
 name: "speckit-specify"
-description: "Create or update the feature specification from a natural language feature description."
+description: "Create or update a lightweight prototype specification: problem, hypothesis, scope, constraints, and pass/fail evidence."
 compatibility: "Requires spec-kit project structure with .specify/ directory"
 metadata:
   author: "github-spec-kit"
@@ -15,6 +15,14 @@ $ARGUMENTS
 ```
 
 You **MUST** consider the user input before proceeding (if not empty).
+
+## Repository Scope
+
+Read [the constitution](../../../.specify/memory/constitution.md) and apply
+[the Copilot guidance](../../copilot-instructions.md) before defining scope.
+For demo creation or extension, load `azure-demo-authoring` and follow its applicable
+references. Keep one customer problem and one testable hypothesis; do not turn
+deliberate prototype limitations into new requirements.
 
 ## Pre-Execution Checks
 
@@ -119,118 +127,38 @@ Given that feature description, do this:
     2. Extract key concepts from description
        Identify: actors, actions, data, constraints
     3. For unclear aspects:
-       - Make informed guesses based on context and industry standards
+       - Reuse the demo's existing patterns and document low-impact assumptions
        - Only mark with [NEEDS CLARIFICATION: specific question] if:
          - The choice significantly impacts feature scope or user experience
          - Multiple reasonable interpretations exist with different implications
          - No reasonable default exists
        - **LIMIT: Maximum 3 [NEEDS CLARIFICATION] markers total**
        - Prioritize clarifications by impact: scope > security/privacy > user experience > technical details
-    4. Fill User Scenarios & Testing section
-       If no clear user flow: ERROR "Cannot determine user scenarios"
-    5. Generate Functional Requirements
-       Each requirement must be testable
-       Use reasonable defaults for unspecified details (document assumptions in Assumptions section)
-    6. Define Success Criteria
-       Create measurable, technology-agnostic outcomes
-       Include both quantitative metrics (time, performance, volume) and qualitative measures (user satisfaction, task completion)
-       Each criterion must be verifiable without implementation details
-    7. Identify Key Entities (if data involved)
+    4. State the customer problem, one testable hypothesis, in/out of scope, and hard constraints.
+    5. Fill User Scenarios & Testing with the smallest end-to-end notebook journey.
+       One P1 scenario is sufficient; steps may depend on earlier setup and deployment.
+    6. Generate only the Functional Requirements needed to test the hypothesis.
+       Preserve existing authentication, networking, and deployment constraints.
+    7. Define Success Criteria as observable pass/fail evidence.
+       Named Azure services, SDKs, APIs, and response shapes are valid when they are
+       part of what is being tested. Add numeric targets only when relevant to the hypothesis;
+       do not invent performance, scale, or satisfaction metrics.
     8. Return: SUCCESS (spec ready for planning)
 
 7. Write the specification to SPEC_FILE using the template structure, replacing placeholders with concrete details derived from the feature description (arguments) while preserving section order and headings.
 
-8. **Specification Quality Validation**: After writing the initial spec, validate it against quality criteria:
-
-   a. **Create Spec Quality Checklist**: Generate a checklist file at `SPECIFY_FEATURE_DIRECTORY/checklists/requirements.md` using the checklist template structure with these validation items:
-
-      ```markdown
-      # Specification Quality Checklist: [FEATURE NAME]
-
-      **Purpose**: Validate specification completeness and quality before proceeding to planning
-      **Created**: [DATE]
-      **Feature**: [Link to spec.md]
-
-      ## Content Quality
-
-      - [ ] No implementation details (languages, frameworks, APIs)
-      - [ ] Focused on user value and business needs
-      - [ ] Written for non-technical stakeholders
-      - [ ] All mandatory sections completed
-
-      ## Requirement Completeness
-
-      - [ ] No [NEEDS CLARIFICATION] markers remain
-      - [ ] Requirements are testable and unambiguous
-      - [ ] Success criteria are measurable
-      - [ ] Success criteria are technology-agnostic (no implementation details)
-      - [ ] All acceptance scenarios are defined
-      - [ ] Edge cases are identified
-      - [ ] Scope is clearly bounded
-      - [ ] Dependencies and assumptions identified
-
-      ## Feature Readiness
-
-      - [ ] All functional requirements have clear acceptance criteria
-      - [ ] User scenarios cover primary flows
-      - [ ] Feature meets measurable outcomes defined in Success Criteria
-      - [ ] No implementation details leak into specification
-
-      ## Notes
-
-      - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`
-      ```
-
-   b. **Run Validation Check**: Review the spec against each checklist item:
-      - For each item, determine if it passes or fails
-      - Document specific issues found (quote relevant spec sections)
-
-   c. **Handle Validation Results**:
-
-      - **If all items pass**: Mark checklist complete and proceed to the Mandatory Post-Execution Hooks section
-
-      - **If items fail (excluding [NEEDS CLARIFICATION])**:
-        1. List the failing items and specific issues
-        2. Update the spec to address each issue
-        3. Re-run validation until all items pass (max 3 iterations)
-        4. If still failing after 3 iterations, document remaining issues in checklist notes and warn user
-
-      - **If [NEEDS CLARIFICATION] markers remain**:
-        1. Extract all [NEEDS CLARIFICATION: ...] markers from the spec
-        2. **LIMIT CHECK**: If more than 3 markers exist, keep only the 3 most critical (by scope/security/UX impact) and make informed guesses for the rest
-        3. For each clarification needed (max 3), present options to user in this format:
-
-           ```markdown
-           ## Question [N]: [Topic]
-
-           **Context**: [Quote relevant spec section]
-
-           **What we need to know**: [Specific question from NEEDS CLARIFICATION marker]
-
-           **Suggested Answers**:
-
-           | Option | Answer | Implications |
-           |--------|--------|--------------|
-           | A      | [First suggested answer] | [What this means for the feature] |
-           | B      | [Second suggested answer] | [What this means for the feature] |
-           | C      | [Third suggested answer] | [What this means for the feature] |
-           | Custom | Provide your own answer | [Explain how to provide custom input] |
-
-           **Your choice**: _[Wait for user response]_
-           ```
-
-        4. **CRITICAL - Table Formatting**: Ensure markdown tables are properly formatted:
-           - Use consistent spacing with pipes aligned
-           - Each cell should have spaces around content: `| Content |` not `|Content|`
-           - Header separator must have at least 3 dashes: `|--------|`
-           - Test that the table renders correctly in markdown preview
-        5. Number questions sequentially (Q1, Q2, Q3 - max 3 total)
-        6. Present all questions together before waiting for responses
-        7. Wait for user to respond with their choices for all questions (e.g., "Q1: A, Q2: Custom - [details], Q3: B")
-        8. Update the spec by replacing each [NEEDS CLARIFICATION] marker with the user's selected or provided answer
-        9. Re-run validation after all clarifications are resolved
-
-   d. **Update Checklist**: After each validation iteration, update the checklist file with current pass/fail status
+8. **Validate scope and evidence**:
+   - Check that the problem, hypothesis, scope, constraints, and pass/fail evidence are clear.
+   - Remove requirements not needed to validate the hypothesis.
+   - Resolve blocking choices with the user through `ask_user`; include a recommendation
+     and concise trade-offs for significant strategy decisions. Never guess a change
+     to authentication, deployment, or other hard constraints to meet a question limit.
+   - If more than three blocking questions remain, report them and pause rather than
+     declaring the spec ready.
+   - Do not generate a separate quality checklist unless explicitly requested.
+     Existing checklists do not justify adding requirements outside the agreed scope.
+   - Report unresolved blockers honestly. A complete spec may go directly to
+     `/speckit-plan`; running `/speckit-clarify` is optional.
 
 ## Mandatory Post-Execution Hooks
 
@@ -272,17 +200,18 @@ Check if `.specify/extensions.yml` exists in the project root.
 Report completion to the user with:
 - `SPECIFY_FEATURE_DIRECTORY` — the feature directory path
 - `SPEC_FILE` — the spec file path
-- Checklist results summary
-- Readiness for the next phase (`/speckit-clarify` or `/speckit-plan`)
+- Brief scope/evidence check and any unresolved blockers
+- Readiness for `/speckit-plan`, or the specific decision needing clarification
 
 **NOTE:** Branch creation is handled by the `before_specify` hook (git extension). Spec directory and file creation are always handled by this core command.
 
 ## Quick Guidelines
 
-- Focus on **WHAT** users need and **WHY**.
-- Avoid HOW to implement (no tech stack, APIs, code structure).
-- Written for business stakeholders, not developers.
-- DO NOT create any checklists that are embedded in the spec. That will be a separate command.
+- Focus on **what we are proving**, **why**, and **what evidence will settle it**.
+- Write for an engineer running a lightweight Azure demo, using plain language.
+- Include technical specifics when they define the hypothesis or hard constraints;
+  leave detailed implementation design to the plan.
+- Keep reusable procedures in the authoring references, not copied into the spec.
 
 ### Section Requirements
 
@@ -294,52 +223,48 @@ Report completion to the user with:
 
 When creating this spec from a user prompt:
 
-1. **Make informed guesses**: Use context, industry standards, and common patterns to fill gaps
+1. **Reuse existing patterns**: Prefer the demo's current behavior and repository guidance over generic industry defaults
 2. **Document assumptions**: Record reasonable defaults in the Assumptions section
 3. **Limit clarifications**: Maximum 3 [NEEDS CLARIFICATION] markers - use only for critical decisions that:
    - Significantly impact feature scope or user experience
    - Have multiple reasonable interpretations with different implications
    - Lack any reasonable default
 4. **Prioritize clarifications**: scope > security/privacy > user experience > technical details
-5. **Think like a tester**: Every vague requirement should fail the "testable and unambiguous" checklist item
+5. **Require observable evidence**: A simple successful response or expected failure can be enough; do not invent metrics
 6. **Common areas needing clarification** (only if no reasonable default exists):
    - Feature scope and boundaries (include/exclude specific use cases)
    - User types and permissions (if multiple conflicting interpretations possible)
    - Security/compliance requirements (when legally/financially significant)
 
-**Examples of reasonable defaults** (don't ask about these):
+**Defaults**:
 
-- Data retention: Industry-standard practices for the domain
-- Performance targets: Standard web/mobile app expectations unless specified
-- Error handling: User-friendly messages with appropriate fallbacks
-- Authentication method: Standard session-based or OAuth2 for web apps
-- Integration patterns: Use project-appropriate patterns (REST/GraphQL for web services, function calls for libraries, CLI args for tools, etc.)
+- Keep the existing identity, network, deployment, and notebook patterns.
+- Do not add retention policies, performance targets, compatibility, fallback paths,
+  or production controls unless required by the hypothesis or explicitly requested.
+- Fail fast on missing prerequisites; fix upstream causes rather than specify
+  catch-and-explain wrappers.
 
 ### Success Criteria Guidelines
 
 Success criteria must be:
 
-1. **Measurable**: Include specific metrics (time, percentage, count, rate)
-2. **Technology-agnostic**: No mention of frameworks, languages, databases, or tools
-3. **User-focused**: Describe outcomes from user/business perspective, not system internals
-4. **Verifiable**: Can be tested/validated without knowing implementation details
+1. **Observable**: Define what output or behavior proves or disproves the hypothesis
+2. **Specific**: Name services, APIs, or output shapes when they matter to the experiment
+3. **Minimal**: Require no more evidence than the agreed hypothesis needs
+4. **Verifiable**: State how an engineer can check the result, including relevant prerequisites
 
 **Good examples**:
 
-- "Users can complete checkout in under 3 minutes"
-- "System supports 10,000 concurrent users"
-- "95% of searches return results in under 1 second"
-- "Task completion rate improves by 40%"
+- "The Azure AI Evaluation SDK returns a coherence score using APIM as its judge endpoint."
+- "The notebook retrieves the uploaded document through the private Search endpoint."
 
-**Bad examples** (implementation-focused):
+**Avoid unless explicitly part of the hypothesis**:
 
-- "API response time is under 200ms" (too technical, use "Users see results instantly")
-- "Database can handle 1000 TPS" (implementation detail, use user-facing metric)
-- "React components render efficiently" (framework-specific)
-- "Redis cache hit rate above 80%" (technology-specific)
+- "System supports 10,000 concurrent users."
+- "Task completion rate improves by 40%."
 
 ## Done When
 
-- [ ] Specification written to `SPEC_FILE` and validated against quality checklist
+- [ ] Specification written to `SPEC_FILE` with bounded scope, constraints, and observable evidence
 - [ ] Extension hooks dispatched or skipped according to the rules in Mandatory Post-Execution Hooks above
-- [ ] Completion reported to user with feature directory, spec file path, and checklist results
+- [ ] Completion reported with feature directory, spec file path, and any blocking decisions
