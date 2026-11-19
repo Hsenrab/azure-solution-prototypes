@@ -76,6 +76,22 @@ Before finalizing changes, verify and state:
 	- `foundrytk-quick-start` for onboarding/feature-discovery requests.
 	- `use-winml-cli` for non-generative ONNX/Windows ML scenarios.
 
+## Spec Kit for Demo Authoring
+- Use Spec Kit for every new or extended demo. During Specify, Plan, Tasks, and
+  Implement, follow the single detailed procedure in
+  `.github/skills/azure-demo-authoring/references/workflow.md`; its bounded
+  discovery and reuse decisions complement these repository instructions and
+  Azure Demo Authoring.
+- Use the project-local Spec Kit templates under
+  `.specify/templates/overrides/`. Keep the discovery bounded, plans tied to
+  existing artifact paths and constraints, and tasks limited to necessary deltas.
+- Generic Spec Kit examples do not require new frameworks, project scaffolding,
+  TDD, test suites, or live Azure operations. Preserve applicable existing checks,
+  hypothesis validation, canonical notebook flows, and explicit live-Azure approval.
+- Do not assume instruction loading or precedence is identical across Copilot
+  surfaces or other coding agents; keep the detailed procedure in its referenced
+  source rather than duplicating it in prompts or commands.
+
 ## Communication
 - When referring to a notebook cell, never use cell numbers. Instead refer to it by its markdown heading (e.g. "the **Step 3** cell") or by what it does (e.g. "the Bicep deployment cell"). Cell numbers are invisible to users and change as cells are added or removed.
 - If inferred or previously requested constraints make a solution materially more complex, explicitly call that out before implementation and summarize the simpler alternative.

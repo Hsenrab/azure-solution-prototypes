@@ -16,6 +16,120 @@ Create or extend a lightweight, runnable Azure demo that validates one clear hyp
 3. Update `README.md` and `metadata.json` when scope changes.
 4. Prefer notebook changes over app code unless code is required.
 
+## Spec Kit Workflow
+
+Use Spec Kit for every new or extended demo. Before `/speckit-specify`, load this
+reference and the applicable repository instructions. Treat the rules below as the
+single detailed authoring procedure for Specify, Plan, Tasks, and Implement; the
+Spec Kit command templates and examples are generic scaffolding, not requirements
+to create application frameworks, tests, or extra artifacts.
+
+### Bounded artifact discovery before Specify
+
+First decide whether the request creates a demo or extends one. Discover only
+artifacts compatible with the stated hypothesis and constraints; do not inventory
+the whole repository.
+
+- **New demo:** inspect `demo-template/` for the expected shape, the canonical
+  setup/destroy notebooks named in the repository instructions, and up to three
+  existing demos selected by service, identity/network constraints, or journey.
+- **Extend demo:** inspect the target demo's relevant Bicep, notebooks, helpers,
+  scripts, README, metadata, and existing feature artifacts; compare with at most
+  two close examples only when a specific compatibility question remains.
+- For each candidate, record its repository-relative path, what behavior it
+  demonstrates, relevant compatibility constraints, and whether it is a plausible
+  reuse candidate. Search further only to answer an unresolved question that could
+  change scope, feasibility, or a hard constraint.
+- Do not run notebooks, deploy or query Azure, access credentials, or change live
+  resources during discovery. Reusing code or resource definitions does not
+  authorize reusing, modifying, or deleting live Azure resources.
+
+Specify remains about the user problem, hypothesis, observable outcomes, and
+compatibility boundaries. Carry a short existing-context summary and concrete
+source paths into the feature artifacts; do not turn discovery into a full
+architecture inventory or retrospective specification.
+
+### Plan and Tasks handoff
+
+Plan records a source-and-decision table for relevant existing Bicep, notebooks,
+helpers, scripts, demo metadata/docs, and prior specs/plans. For each, cite the
+path and choose **reuse unchanged**, **adapt**, **do not reuse**, or **new**;
+explain the decision briefly. Explicitly carry forward identity, authentication,
+network, deployment, subscription, generated-environment, and live-operation
+constraints where relevant. A proposed approach must satisfy these constraints
+before it is selected. Prefer existing patterns and minimal deltas; keep each
+demo self-contained under `demos/<demo-name>/` and do not introduce a shared
+runtime framework by default.
+
+Tasks name only work needed for the approved delta, including directly related
+documentation/metadata and proportional validation. Do not add generic project
+initialization, frameworks, dependencies, broad test matrices, or test-first/TDD
+work by default. Add focused automated tests when requested or justified by
+changed logic. Always preserve existing quality gates and provide one concise,
+runnable hypothesis-validation journey with observable expected results. Include
+the generated `env/.env` handoff, canonical setup/destroy flows, notebook hygiene,
+and explicit live-Azure approval when applicable.
+
+Implement follows the recorded reuse decisions and constraints. Run relevant
+existing checks; distinguish offline validation from Azure-dependent acceptance.
+Do not treat an unrun live scenario as passed, alter prior experiment results, or
+weaken historical failures. Report which sources were reused/adapted/rejected,
+what remains unverified, and any constraint that prevented reuse.
+
+### Evidence and customization boundaries
+
+The following research informs this workflow. These sources describe different
+tools and are not evidence of identical behavior across coding agents:
+
+- **Documented Spec Kit behavior:** The
+  [existing-project guide](https://github.github.com/spec-kit/guides/existing-projects.html)
+  recommends bounded changes and checking repository architecture during Plan;
+  it does not prescribe a bounded artifact scan before Specify. The
+  [customization guide](https://github.github.com/spec-kit/guides/customization.html)
+  supports project-local template overrides, presets, and extensions for different
+  customization needs. The
+  [upgrade guide](https://github.github.com/spec-kit/upgrade.html) documents
+  manifest-aware integration upgrades and warns that locally modified managed
+  files require review.
+- **Documented Copilot behavior:** GitHub recommends short, broadly applicable
+  repository instructions and task-specific skills
+  ([custom instructions](https://docs.github.com/en/copilot/concepts/prompting-and-context/custom-instructions),
+  [agent skills](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills)).
+  Supported instruction types and precedence vary by Copilot client and surface;
+  some combine instructions without a general precedence order. Do not assume
+  Spec Kit skills, Copilot instructions, `AGENTS.md`, `CLAUDE.md`, or other
+  agent-specific files load or override one another identically.
+- **Demonstrated community patterns:** The
+  [Radius multi-repository discussion](https://github.com/github/spec-kit/discussions/1119)
+  reports accurate source paths and implementation patterns across a workspace,
+  while requiring confirmation before editing the code repository. A
+  [brownfield walkthrough](https://github.com/jbarbosa26/SpecKit/blob/main/docs/04-adapting-existing-projects.md)
+  demonstrates naming existing modules in Specify and recording deviations in
+  Plan. The
+  [brownfield extension proposal and discussion](https://github.com/github/spec-kit/issues/1436)
+  explores automated discovery, but community feedback identifies integration
+  and bootstrap limitations; it is not evidence this repository needs an extension.
+- **Repository fit (recommendation):** Keep the detailed procedure here, link it
+  from the relevant Spec Kit skills, and use supported project-local template
+  overrides for artifact-shape changes. This reuses the already-loaded Azure
+  authoring skill and avoids a new agent, extension, or duplicated checklist.
+  Overrides are preferable to editing managed core templates because their
+  documented resolution layer is designed for local customization. Any locally
+  changed managed skill still needs review when upgrading the Copilot integration.
+  A preset could share more workflow behavior, but adds installation,
+  compatibility, and maintenance work not justified for this single repository.
+
+### Representative dry-run handoff
+
+These are file-only examples of the expected authoring decisions, not Azure
+validation or claims that a feature was implemented.
+
+| Phase | New demo: hypothetical keyless Foundry scenario | Extend demo: Search pagination |
+|---|---|---|
+| Specify discovery | Inspect `demo-template/`; the canonical setup/destroy notebooks and `app/notebook_helpers.py` in `demos/speech01-foundry-speech/`; and `demos/gpt4o01-text-image-audio/infra/main.bicep`. Record that the Foundry deployment pattern is relevant but sets `disableLocalAuth` to `false`; inspect the Speech Bicep's `disableLocalAuth: true` and network settings as a constraint example. | Inspect `demos/search02-hybrid-pagination/infra/main.bicep`, `infra/search.bicep`, `app/notebook_helpers.py`, the relevant notebooks, README, metadata, and `specs/001-provision-search-debug/` plus `specs/003-vector-only-contribution/`. |
+| Plan decision | Adapt the template layout and canonical notebook flow. Reuse the Foundry account/project/deployment pattern from the GPT-4o Bicep, but adapt auth in Bicep to satisfy the hypothetical keyless constraint; do not copy Speech's unrelated Function App/storage resources. Reuse the CLI path-resolution helper only if the new journey needs it. Keep runtime files in the new demo folder. | Reuse the target's Bicep and generated-environment contract unchanged unless the hypothesis requires a platform change; reuse its helper/notebook conventions. Adapt only identified scenario files. Do not redeploy or touch live resources as part of this authoring workflow. |
+| Tasks/validation | Create only required demo-owned Bicep, metadata/docs, and scenario files; make permitted canonical notebook substitutions. Provide one runnable hypothesis journey and existing notebook checks; live Azure steps remain separately gated by explicit approval. | List only necessary app/notebook/docs/metadata deltas and focused checks justified by changed logic. Preserve existing notebook CI/pre-commit gates and identify prior acceptance evidence without editing it. |
+
 ## Required Demo Shape
 - `README.md`
 - `metadata.json`

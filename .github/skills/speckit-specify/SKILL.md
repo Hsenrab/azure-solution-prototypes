@@ -20,9 +20,14 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 Read [the constitution](../../../.specify/memory/constitution.md) and apply
 [the Copilot guidance](../../copilot-instructions.md) before defining scope.
-For demo creation or extension, load `azure-demo-authoring` and follow its applicable
-references. Keep one customer problem and one testable hypothesis; do not turn
-deliberate prototype limitations into new requirements.
+For demo creation or extension, load `azure-demo-authoring` and follow its
+[Spec Kit workflow](../azure-demo-authoring/references/workflow.md#spec-kit-workflow),
+including bounded artifact discovery before drafting the specification.
+Carry concise findings, concrete source paths, and compatibility boundaries into
+the spec. Keep one customer problem and one testable hypothesis; do not turn
+deliberate prototype limitations into new requirements. The reference procedure
+governs demo authoring where generic examples suggest greenfield implementation
+or exhaustive discovery.
 
 ## Pre-Execution Checks
 

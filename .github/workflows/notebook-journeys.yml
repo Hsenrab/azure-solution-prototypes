@@ -1,0 +1,54 @@
+name: Notebook journey selection
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      demos:
+        description: Comma-separated notebook demo folder names
+        type: string
+        required: false
+      all_demos:
+        description: Select all notebook demos
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      demos: ${{ steps.select.outputs.demos }}
+      has_demos: ${{ steps.select.outputs.has_demos }}
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+      - name: Discover affected demos
+        id: select
+        env:
+          INPUT_DEMOS: ${{ inputs.demos }}
+          INPUT_ALL_DEMOS: ${{ inputs.all_demos }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.sha }}
+        run: python .github/notebook-journeys/discover.py
+
+  selected-demo:
+    needs: discover
+    if: needs.discover.outputs.has_demos == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        demo: ${{ fromJSON(needs.discover.outputs.demos) }}
+    steps:
+      - name: Report selected demo
+        env:
+          DEMO: ${{ matrix.demo }}
+        run: |
+          printf 'Selected demo: %s\n' "$DEMO"
+          echo 'Selection only; no notebooks executed or Azure resources provisioned.'

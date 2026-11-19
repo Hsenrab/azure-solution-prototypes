@@ -88,6 +88,21 @@ Use `demo-template/metadata.json` as the baseline.
 - Repo-wide instructions: `.github/copilot-instructions.md`
 - Repository skill: `.github/skills/azure-demo-authoring/SKILL.md`
 
+## Notebook journey selection
+
+The **Notebook journey selection** workflow discovers demos from tracked
+`demos/*/notebooks/*.ipynb` paths. Main pushes select demos affected by
+non-documentation files under their folders; changes to the workflow or
+`.github/notebook-journeys/` select all demos. Documentation-only changes select
+no demos. The complete push range is compared, including removed and renamed
+paths; demos with no remaining notebooks are reported but not scheduled.
+
+To run it manually, supply comma-separated demo folder names in `demos`, or
+select `all_demos`, but not both. Unknown names fail the run. Each selected
+demo gets a parallel placeholder job; no notebooks run and no Azure resources
+are provisioned in this stage. Future execution will run each demo's notebooks
+sequentially.
+
 ## Recommendation notes
 
 - Recommendation: keep demos intentionally small and disposable.

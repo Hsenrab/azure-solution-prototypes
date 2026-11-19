@@ -20,9 +20,14 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 Apply [the constitution](../../../.specify/memory/constitution.md) and
 [the Copilot guidance](../../copilot-instructions.md). For demo creation or extension,
-load `azure-demo-authoring` and follow its applicable references before planning.
-Use the existing demo layout and preserve its hard constraints. Do not copy
-reusable authoring procedures into feature artifacts.
+load `azure-demo-authoring` and its
+[Spec Kit workflow](../azure-demo-authoring/references/workflow.md#spec-kit-workflow)
+before planning. Carry concrete source paths, reuse/adapt/new decisions, and
+identity, network, deployment, and live-operation constraints into the plan.
+Use the existing demo layout and preserve its hard constraints. Create additional
+design artifacts only when needed to resolve a real decision or validate the
+hypothesis. Reference reusable authoring procedures rather than copy them into
+feature artifacts; generic examples must not introduce application scaffolding.
 
 ## Pre-Execution Checks
 

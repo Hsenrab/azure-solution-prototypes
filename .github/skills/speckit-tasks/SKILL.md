@@ -16,6 +16,13 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+For Azure demo work in this repository, load
+`.github/skills/azure-demo-authoring/references/workflow.md` and the resolved
+project-local tasks template. Its task-generation rules supersede the generic
+sample phases and test-first examples below: include only necessary deltas,
+related documentation/metadata, and proportional validation. Do not add generic
+setup, frameworks, TDD, tests, or broad test matrices by default.
+
 ## Pre-Execution Checks
 
 **Check for extension hooks (before tasks generation)**:
