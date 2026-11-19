@@ -16,12 +16,15 @@ from dotenv import dotenv_values
 from app.assert_lab import (
     DeploymentMetadata,
     ModelDeployment,
+    approve_suite,
     artifact_path,
     load_connections,
     provider_model,
+    review_candidates,
     smoke_connections,
     validate_catalog,
     validate_deployments,
+    validate_taxonomy,
     write_connections,
 )
 
@@ -33,9 +36,9 @@ SPEECH = REPOSITORY / "demos" / "speech01-foundry-speech"
 
 def deployments():
     return (
-        ModelDeployment("older", "assert-older", "gpt-5", "2025-08-07", "GlobalStandard", 10),
-        ModelDeployment("intermediate", "assert-intermediate", "gpt-5.4", "2026-03-05", "GlobalStandard", 10),
-        ModelDeployment("newer", "assert-newer", "gpt-5.6-sol", "2026-07-09", "GlobalStandard", 10),
+        ModelDeployment("older_model", "assert-older", "gpt-5", "2025-08-07", "GlobalStandard", 10),
+        ModelDeployment("intermediate_model", "assert-intermediate", "gpt-5.4", "2026-03-05", "GlobalStandard", 10),
+        ModelDeployment("newer_model", "assert-newer", "gpt-5.6-sol", "2026-07-09", "GlobalStandard", 10),
     )
 
 
@@ -87,7 +90,7 @@ class DeploymentContractTests(unittest.TestCase):
         self.assertEqual(validate_deployments(deployments()), deployments())
         for invalid in (
             deployments()[:2],
-            (*deployments()[:2], replace(deployments()[2], alias="older")),
+            (*deployments()[:2], replace(deployments()[2], alias="older_model")),
             (*deployments()[:2], replace(deployments()[2], deployment_name="ASSERT-OLDER")),
             (*deployments()[:2], replace(deployments()[2], model_name="gpt-5")),
             (*deployments()[:2], replace(deployments()[2], model_version="2025-08-07")),
@@ -98,7 +101,7 @@ class DeploymentContractTests(unittest.TestCase):
     def test_invalid_values_do_not_become_defaults(self):
         for field, value in (
             ("capacity", 0), ("capacity", True), ("model_version", ""),
-            ("alias", "unknown"), ("sku", "Standard"),
+            ("alias", "unknown"), ("alias", "older"), ("sku", "Standard"),
         ):
             with self.subTest(field=field), self.assertRaises(ValueError):
                 replace(deployments()[0], **{field: value})
@@ -124,11 +127,38 @@ class DeploymentContractTests(unittest.TestCase):
             env = dotenv_values(env_path)
             self.assertNotIn("AZURE_API_KEY", env)
             self.assertEqual(env["ASSERT_AZURE_USE_AAD"], "1")
-            self.assertEqual(env["ASSERT_TARGET_NEWER"], "assert-newer")
+            self.assertEqual(env["ASSERT_TARGET_NEWER_MODEL"], "assert-newer")
             with patch.dict(os.environ, {}, clear=True):
                 restored = load_connections(root=root)
                 self.assertEqual(restored, metadata())
                 self.assertNotIn("AZURE_API_KEY", os.environ)
+
+    def test_existing_connection_files_are_relabelled_in_memory_only(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            env_path, metadata_path = write_connections(metadata(), root=root)
+            legacy = metadata().to_dict()
+            legacy["deployments"] = [
+                {**model.to_dict(), "alias": model.alias.removesuffix("_model")}
+                for model in deployments()
+            ]
+            metadata_path.write_text(json.dumps(legacy), encoding="utf-8")
+            env_path.write_text(env_path.read_text().replace("_MODEL=", "="), encoding="utf-8")
+            before = {path: path.read_bytes() for path in (env_path, metadata_path)}
+            with patch.dict(os.environ, {"ASSERT_TARGET_NEWER": "stale"}, clear=True):
+                self.assertEqual(load_connections(root=root), metadata())
+                self.assertEqual(os.environ["ASSERT_TARGET_NEWER_MODEL"], "assert-newer")
+                self.assertNotIn("ASSERT_TARGET_NEWER", os.environ)
+            self.assertEqual(before, {path: path.read_bytes() for path in before})
+
+    def test_duplicate_old_and_new_environment_labels_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            env_path, _ = write_connections(metadata(), root=root)
+            with env_path.open("a", encoding="utf-8") as file:
+                file.write('ASSERT_TARGET_NEWER="assert-newer"\n')
+            with self.assertRaisesRegex(ValueError, "Both ASSERT_TARGET_NEWER"):
+                load_connections(root=root)
 
     def test_missing_environment_fails(self):
         with tempfile.TemporaryDirectory() as directory, self.assertRaises(FileNotFoundError):
@@ -183,9 +213,9 @@ class DeploymentContractTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             write_connections(partial, root=root)
-            with patch.dict(os.environ, {"ASSERT_TARGET_INTERMEDIATE": "stale-deployment"}):
+            with patch.dict(os.environ, {"ASSERT_TARGET_INTERMEDIATE_MODEL": "stale-deployment"}):
                 self.assertEqual(load_connections(root=root), partial)
-                self.assertNotIn("ASSERT_TARGET_INTERMEDIATE", os.environ)
+                self.assertNotIn("ASSERT_TARGET_INTERMEDIATE_MODEL", os.environ)
 
 
 class CatalogTests(unittest.TestCase):
@@ -384,6 +414,86 @@ class NotebookContractTests(unittest.TestCase):
             (ROOT / "notebooks" / "X_destroy.ipynb").read_bytes(),
             (SPEECH / "notebooks" / "X_destroy.ipynb").read_bytes(),
         )
+
+    def test_editable_confirmation_flags_have_assignment_only_cells(self):
+        expected = {
+            "01_deploy_infra.ipynb": {"POLICY_REVIEW_COMPLETE"},
+            "03_assert_flow.ipynb": {
+                "TAXONOMY_REVIEWED",
+                "GENERATED_CASES_REVIEWED",
+            },
+        }
+        for name, flags in expected.items():
+            notebook = json.loads((ROOT / "notebooks" / name).read_text(encoding="utf-8"))
+            seen = set()
+            for cell in notebook["cells"]:
+                if cell["cell_type"] != "code":
+                    continue
+                body = ast.parse("".join(cell["source"])).body
+                for statement in body:
+                    if not isinstance(statement, ast.Assign):
+                        continue
+                    for target in statement.targets:
+                        if isinstance(target, ast.Name) and target.id in flags:
+                            with self.subTest(notebook=name, flag=target.id):
+                                self.assertNotIn(target.id, seen)
+                                self.assertEqual(len(body), 1)
+                                self.assertEqual(len(statement.targets), 1)
+                                self.assertIsInstance(statement.value, ast.Constant)
+                                self.assertIs(type(statement.value.value), bool)
+                                seen.add(target.id)
+            self.assertEqual(seen, flags)
+
+    def test_action_cells_still_block_unconfirmed_reviews(self):
+        gates = (
+            ("01_deploy_infra.ipynb", "POLICY_REVIEW_COMPLETE", "if not POLICY_REVIEW_COMPLETE:",
+             ValueError, "Complete the scoped inherited-policy review"),
+            ("03_assert_flow.ipynb", "TAXONOMY_REVIEWED", "assert TAXONOMY_REVIEWED,",
+             AssertionError, "Review the taxonomy first"),
+            ("03_assert_flow.ipynb", "TAXONOMY_REVIEWED", "generate_starter_tests(suite,",
+             AssertionError, "Review the taxonomy first"),
+            ("03_assert_flow.ipynb", "GENERATED_CASES_REVIEWED", "reviewed_cases = review_candidates(",
+             ValueError, "Review every generated case"),
+        )
+        for name, flag, marker, error, message in gates:
+            notebook = json.loads((ROOT / "notebooks" / name).read_text(encoding="utf-8"))
+            source = next("".join(cell["source"]) for cell in notebook["cells"]
+                          if cell["cell_type"] == "code" and marker in "".join(cell["source"]))
+            generate = MagicMock(side_effect=AssertionError("Paid generation was attempted"))
+            namespace = {
+                flag: False, "suite": ROOT / "tests" / "fixtures",
+                "settings": None, "metadata": None, "demo_root": ROOT,
+                "review_candidates": review_candidates, "approve_suite": approve_suite,
+                "generate_candidates": generate,
+                "generate_starter_tests": generate,
+            }
+            with self.subTest(flag=flag), self.assertRaisesRegex(error, message):
+                exec(compile(source, "unconfirmed-notebook-action", "exec"), namespace)
+            generate.assert_not_called()
+
+    def test_taxonomy_inspection_does_not_reset_review_confirmation(self):
+        import pandas as pd
+        from IPython.display import FileLink
+
+        notebook = json.loads((ROOT / "notebooks" / "03_assert_flow.ipynb").read_text(encoding="utf-8"))
+        source = next("".join(cell["source"]) for cell in notebook["cells"]
+                      if cell["cell_type"] == "code" and "labels = validate_taxonomy(taxonomy)" in "".join(cell["source"]))
+        displayed = []
+        namespace = {
+            "suite": ROOT / "tests" / "fixtures", "json": json, "pd": pd, "Path": Path,
+            "FileLink": FileLink, "demo_root": ROOT,
+            "display": displayed.append, "validate_taxonomy": validate_taxonomy,
+            "TAXONOMY_REVIEWED": True,
+        }
+        with chdir(ROOT / "notebooks"), redirect_stdout(io.StringIO()):
+            exec(compile(source, "taxonomy-inspection", "exec"), namespace)
+            self.assertIsInstance(displayed[0], FileLink)
+            self.assertNotIn("\\", displayed[0].path)
+            self.assertEqual(Path(displayed[0].path).resolve(), namespace["suite"] / "taxonomy.json")
+            self.assertIn("<a href=", displayed[0]._repr_html_())
+        self.assertIs(namespace["TAXONOMY_REVIEWED"], True)
+        self.assertEqual(len(namespace["labels"]), 2)
+        self.assertEqual(len(displayed), 2)
 
     def test_setup_only_has_authorized_substitutions(self):
         source = (SPEECH / "notebooks" / "00_setup.ipynb").read_text(encoding="utf-8")

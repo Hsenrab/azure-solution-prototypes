@@ -10,7 +10,7 @@ param demoId string = 'assert01'
 param uniqueSuffix string = uniqueString(subscription().id, resourceGroup().id)
 
 type deploymentInput = {
-  alias: 'older' | 'intermediate' | 'newer'
+  alias: 'older_model' | 'intermediate_model' | 'newer_model'
   @minLength(1)
   deploymentName: string
   @minLength(1)

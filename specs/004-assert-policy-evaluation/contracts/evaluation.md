@@ -39,7 +39,7 @@ MAX_PATH; fail before paid inference if the checkout still makes them too long.
 - `run`: unique target-specific identifier only for inference/judge runs.
 - `behavior.name` and `behavior.description`: selected policy identity and rendered behavior specification.
 - `context`: selected application context.
-- `default_model.name`: `azure/gpt5_series/<configured-generation-deployment-name>`; approved current role alias is `newer`.
+- `default_model.name`: `azure/gpt5_series/<configured-generation-deployment-name>`; current authoring role alias is `newer_model`.
 - `results_dir`: absolute `outputs/generated/assert-results` path.
 - `pipeline`: explicit stage mappings below.
 
@@ -65,7 +65,7 @@ Review the resulting native taxonomy before continuing. Retain exactly one permi
 |---|---|
 | `pipeline.systematize.enabled` | `false` |
 | `pipeline.test_set.taxonomy_path` | Absolute reviewed taxonomy path |
-| `pipeline.test_set.save_path` | Absolute suite `test_set.jsonl` path |
+| `pipeline.test_set.save_path` | Absolute suite `generated-test-set.jsonl` path |
 | `pipeline.test_set.model.name` | Explicit generator deployment route |
 | `pipeline.test_set.prompt.sample_size` | `8` |
 | `pipeline.test_set.prompt.sampling.method` | `stratified` |
@@ -80,7 +80,37 @@ With the reviewed two-category taxonomy, native allocation gives 4 permitted + 4
 
 Preserve generated candidates separately before merging handwritten additions into the approved native test-set file. Do not run generation again between target comparisons.
 
+### Editable Starter Generation Pass
+
+Use the same native test-generation stage, generator model, selected policy
+context, and reviewed taxonomy. Set `prompt.sample_size: 2` with stratified
+`[behavior]` sampling and omit scenario generation. Systematization, target
+inference, and judging remain disabled. This is a separate paid generation step.
+
+Preserve the versioned native output in `generated-extra-tests.jsonl`. Require
+exactly one permitted and one prohibited prompt. Copy these fresh examples into
+the suite-local `extra-tests.jsonl` with `starter-permitted` and
+`starter-prohibited` identifiers, retaining native category names and seed text.
+Learners may edit them or add cases with `manual-` identifiers before review and
+merging. Never read fixed examples from `data/extra-tests.jsonl` or overwrite
+existing editable tests. Reopening files and rerunning merging must not invoke
+generation. Approved suites and previous native evidence remain unchanged.
+
+Rerunning the starter generation cell before approval validates and reuses an
+existing editable file, explicitly reports that no generation or paid calls
+occurred, and displays its table/link again. It must not rewrite learner edits
+or require the original two-starter count after customization. Invalid existing
+cases remain visible errors, not a reason to regenerate or overwrite them.
+
 ### Approved Inference and Judging Pass
+
+The notebook has one case-review checkpoint, **Review and combine tests**.
+Merging writes `review.json` hashes for the complete current inputs. On the first
+evaluation, verify those hashes and automatically create the frozen-input
+`approval.json` before inference. Missing or changed review inputs block model
+calls. Later targets verify and reuse the same frozen record without rewriting
+it. There is no separate final approval cell or flag. Retain the existing
+approval/provenance format so saved runs remain readable.
 
 | Key | Value / rule |
 |---|---|
@@ -89,10 +119,10 @@ Preserve generated candidates separately before merging handwritten additions in
 | `pipeline.inference.test_set_path` | Absolute approved native JSONL path |
 | `pipeline.inference.target.model.name` | Target's `azure/gpt5_series/<deployment-name>` route |
 | `pipeline.inference.target.system_prompt` | Shared effective policy/application instructions |
-| `pipeline.inference.tester.model.name` | Fixed configured tester route (`newer` currently) |
+| `pipeline.inference.tester.model.name` | Fixed configured tester route (`newer_model` currently) |
 | `pipeline.inference.max_turns` | `3` by default |
 | `pipeline.inference.save_dir` | This target's distinct run directory |
-| `pipeline.judge.model.name` | Fixed configured judge route (`newer` currently) |
+| `pipeline.judge.model.name` | Fixed configured judge route (`newer_model` currently) |
 | `pipeline.judge.inference_set_path` | This run's native `inference_set.jsonl` |
 | `pipeline.judge.taxonomy_path` | Absolute approved taxonomy path |
 | `pipeline.judge.save_dir` | This target's distinct run directory |

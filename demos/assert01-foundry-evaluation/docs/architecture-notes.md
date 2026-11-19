@@ -1,5 +1,17 @@
 # ASSERT architecture and acceptance evidence
 
+## Model alias naming
+
+Current authoring settings, notebook selections, Bicep inputs, and newly generated
+connection variables use `older_model`, `intermediate_model`, and `newer_model`.
+Actual Azure model/deployment names are unchanged. Existing connection files and
+evaluation artifacts retain the original labels used in the evidence below.
+The shared readers translate legacy model records and connection variables in
+memory only; they do not rewrite approval, provenance, native configs, or results.
+Old results remain readable, but new evaluations use a fresh reviewed suite:
+old approvals must not be resealed or treated as matching renamed shared settings.
+Run-folder prefixes remain compact without `_model` for Windows MAX_PATH.
+
 ## Current status - 2026-11-09
 
 **Three-model infrastructure, native connections and 14-case comparison passed.**

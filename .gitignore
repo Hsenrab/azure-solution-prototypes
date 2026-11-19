@@ -41,6 +41,10 @@ demos/search02-hybrid-pagination/.venv-preview/
 outputs/generated/
 demos/**/outputs/generated/
 
+# ASSERT learner-authored policies are local experiment inputs.
+demos/assert01-foundry-evaluation/data/policies/*.yaml
+!demos/assert01-foundry-evaluation/data/policies/customer-support.yaml
+
 # Azure Function deployment artifacts (generated)
 demos/**/functionapp/.python_packages/
 demos/**/outputs/functionapp-package.zip

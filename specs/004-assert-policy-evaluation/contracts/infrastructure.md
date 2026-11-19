@@ -75,9 +75,14 @@ The deployment notebook writes git-ignored `env/.env` automatically after succes
 | `ASSERT_AZURE_USE_AAD` | `1`, explicitly select native Entra rather than fallback |
 | `AZURE_TOKEN_CREDENTIALS` | `AzureCliCredential`, restrict native credentials to the setup login |
 | `AZURE_API_VERSION` | Explicit dated provider API version; planned GA compatibility value `2024-10-21`, subject to M1 connection validation |
-| `ASSERT_TARGET_OLDER` | Older model deployment name |
-| `ASSERT_TARGET_INTERMEDIATE` | Intermediate model deployment name |
-| `ASSERT_TARGET_NEWER` | Newer model deployment name |
+| `ASSERT_TARGET_OLDER_MODEL` | Deployment name for `older_model` |
+| `ASSERT_TARGET_INTERMEDIATE_MODEL` | Deployment name for `intermediate_model` |
+| `ASSERT_TARGET_NEWER_MODEL` | Deployment name for `newer_model` |
+
+New deployment inputs and metadata use the `_model` aliases. The connection
+reader also accepts existing files with the original aliases and environment
+variable names, translating them in memory without rewriting files or changing
+Azure deployment names. Mixed old/new variables for the same target are rejected.
 
 Store richer actual-model metadata in secret-free `outputs/generated/deployment.json`,
 including `skipped_deployment` and `skip_reason` (both null for complete deployment).

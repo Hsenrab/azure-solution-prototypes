@@ -73,7 +73,7 @@ The generated directory is created by the implemented setup/deployment flow befo
 Before clearing/stripping outputs, inspect all available outputs from all five demo notebooks, including `01_deploy_infra.ipynb`, for credential exposure without echoing secret values. Then, from the repository root, run the existing configured notebook cleanup against changed demo notebooks:
 
 ```powershell
-pre-commit run --files demos\assert01-foundry-evaluation\notebooks\00_setup.ipynb demos\assert01-foundry-evaluation\notebooks\01_deploy_infra.ipynb demos\assert01-foundry-evaluation\notebooks\02_configure.ipynb demos\assert01-foundry-evaluation\notebooks\03_test.ipynb demos\assert01-foundry-evaluation\notebooks\X_destroy.ipynb
+pre-commit run --files demos\assert01-foundry-evaluation\notebooks\00_setup.ipynb demos\assert01-foundry-evaluation\notebooks\01_deploy_infra.ipynb demos\assert01-foundry-evaluation\notebooks\02_configure.ipynb demos\assert01-foundry-evaluation\notebooks\03_assert_flow.ipynb demos\assert01-foundry-evaluation\notebooks\X_destroy.ipynb
 ```
 
 If a hook modifies notebook metadata, retain those changes and rerun the same focused check. Do not weaken the existing workflow.
@@ -90,7 +90,7 @@ comparison preview before running its separate paid cell.
 
 ### Define the Policy and Configuration
 
-In the configure notebook's **Define the policy** section, edit the selected policy's context, prohibited behavior, and permitted behavior.
+Setup ends with **Connect models** in `02_configure.ipynb`. Start the experiment in `03_assert_flow.ipynb`: under **Define the policy**, edit the selected policy's context, prohibited behavior, and permitted behavior.
 
 In **Configure the evaluation**, inspect:
 
@@ -104,16 +104,31 @@ Expected: changing a policy or model role requires input changes, not edits to e
 
 ### Generate, Review, and Add Cases
 
-In the test notebook's **Generate and review tests** section:
+After completing the customer-support walkthrough, use
+[04_your_own_policy.ipynb](../../demos/assert01-foundry-evaluation/notebooks/04_your_own_policy.ipynb)
+for the second-policy exercise. It keeps the same evaluation cells and section
+order, adding an ID/revision selection step, an editable policy dictionary,
+and a validation/save cell for `data/policies/<id>-<revision>.yaml`. It selects
+that policy in memory and retains the shared model/budget settings. Saved
+selections live alongside suites in
+`outputs/generated/collections/c-<hash>/active-suite.json` and `active-runs.json`,
+keeping different policies and revisions separate. `collection.json` records
+the policy identity; the viewer's `ARTIFACTS_ROOT` is the collection directory.
+Unchanged policy content can be saved again; different content requires a new
+ID/revision. Learner-created policies and generated artifacts are Git-ignored;
+the shipped example is tracked. Existing fixed-name policy, selection files,
+and older suites are not moved or changed.
+
+In the flow notebook's **Generate and review tests** section:
 
 1. Run native taxonomy generation without target evaluation.
 2. Review/correct category definitions and boolean permissibility labels.
 3. Run native test generation on that reviewed taxonomy, still with target inference and judging disabled.
 4. Inspect the 8 prompts and 4 adaptive scenario definitions. Confirm both permitted and prohibited cases in each interaction type.
-5. Add one permitted and one prohibited handwritten case using the native format documented in the [evaluation contract](./contracts/evaluation.md).
-6. Merge the additions, inspect all 14 cases, and explicitly approve the reviewed taxonomy, policy, test content, and shared settings.
+5. Run the cell under **Add your own tests** to generate one additional permitted and one prohibited prompt from the same policy and reviewed taxonomy. Open the suite-local `extra-tests.jsonl` link to customize these AI-generated examples or add handwritten cases using the native format documented in the [evaluation contract](./contracts/evaluation.md). Do not use the legacy fixed file under `data/`.
+6. Confirm review and combine the tests under **Review and combine tests**, then inspect all 14 cases. There is no separate final approval step.
 
-Expected: no target test-set responses exist before approval. Adaptive runtime follow-ups are not preapproved messages; approval covers the scenario definitions, constraints, tester settings, and turn limit.
+Expected: no target test-set responses exist before evaluation starts. Combining saves hashes in `review.json`; starting evaluation verifies that the reviewed inputs are unchanged and automatically saves the frozen-input record in `approval.json`. Adaptive runtime follow-ups are not fixed messages; the frozen inputs cover scenario definitions, constraints, tester settings, and the turn limit.
 
 ### Run the First Target
 
@@ -169,7 +184,7 @@ The replacement exercise is not permission to silently substitute a model when t
 
 Verify locally with focused tests:
 
-- An unapproved or subsequently edited policy/taxonomy/test set cannot start target test inference.
+- Inputs without a completed review/merge, or edited since review, cannot start target inference. Previously frozen suites must still match their saved hashes; they are never automatically resealed.
 - Unknown category names, duplicate IDs, or missing permissibility fail approval.
 - Both interaction types and both policy classifications are present in the default reviewed set.
 - Multiple failing turns count once; later compliance does not erase the failure.

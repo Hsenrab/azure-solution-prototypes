@@ -41,7 +41,7 @@ Use native ASSERT stages and file formats. A small demo-local helper handles aut
 
 **Primary Dependencies**: `assert-ai==0.3.0`, its native LiteLLM/Pydantic/PyYAML dependencies, `azure-identity`, `azure-mgmt-resource`, `azure-mgmt-cognitiveservices`, `python-dotenv`, and pandas for small readable result tables. Jupyter kernel setup follows the source notebook. Avoid an additional inference SDK: ASSERT owns the provider client.
 
-**Storage**: Committed synthetic policy/settings/handwritten-case inputs; git-ignored generated environment and artifacts under the demo. No cloud storage or database.
+**Storage**: Committed synthetic policy/settings; git-ignored generated environment, native artifacts, and editable starter cases inside each suite. The legacy committed extra-test examples are retained but no longer read. No cloud storage or database.
 
 **Testing**: Standard-library `unittest` for demo-local logic and native-contract fixtures; Bicep build; repository `pre-commit` notebook cleanup; focused live smoke/acceptance runs only after explicit subscription and deployment selection.
 
@@ -53,7 +53,7 @@ Use native ASSERT stages and file formats. A small demo-local helper handles aut
 
 **Constraints**: Exactly three distinct supported generations for full initial acceptance; global deployment allowed; native refreshable Entra credentials with no keys/tokens in demo files; explicit test approval; matching comparison provenance; no model/region/authentication fallback, CI integration, automatic regression flags, or pass/fail gates.
 
-**Scale/Scope**: One learner, one synthetic starter policy, one configurable second-policy exercise, three target runs. At defaults, each target receives at most 20 target responses from the 12 cases (8 + 4 x 3), or 60 across three targets, excluding connection smoke tests. Tester, generation, judging, and provider retry calls incur additional usage. Two handwritten additions increase case totals to 14 and must appear in all three runs.
+**Scale/Scope**: One learner, one synthetic starter policy, one configurable second-policy exercise, three target runs. At defaults, each target receives at most 20 target responses from the 12 main cases (8 + 4 x 3), or 60 across three targets, excluding connection smoke tests. Tester, generation, judging, and provider retry calls incur additional usage. Two fresh editable starter prompts increase case totals to 14 and the default target-response budget to 22 per target; the same approved additions must appear in all three runs.
 
 ## Constitution Check
 
@@ -101,7 +101,6 @@ demos/assert01-foundry-evaluation/
     lab.yaml
     policies/
       customer-support.yaml
-    extra-tests.jsonl
   docs/
     architecture-notes.md
   env/
@@ -112,7 +111,7 @@ demos/assert01-foundry-evaluation/
     00_setup.ipynb
     01_deploy_infra.ipynb
     02_configure.ipynb
-    03_test.ipynb
+    03_assert_flow.ipynb
     X_destroy.ipynb
   outputs/
     .gitkeep
@@ -172,14 +171,18 @@ cases or rerunning the earlier targets; destructive cleanup still needs consent.
 |---|---|---|
 | 1. Setup | Standard setup; install the pinned ASSERT package in the demo kernel | Isolated environment and registered kernel |
 | 2. Connect models | Configure notebook: load generated environment and display non-secret model identities | Deployment metadata consumed |
-| 3. Define policy | Edit the selected policy's context, prohibited behavior, and permitted behavior | Policy YAML |
-| 4. Configure evaluation | Inspect generation budget, model roles, target prompt, rubric, and stage configurations | Secret-free native YAML configs |
-| 5. Generate and review tests | Test notebook: generate/review taxonomy, generate 8 prompts + 4 adaptive scenarios, inspect/edit, merge handwritten cases, explicitly approve | Reviewed native taxonomy/test set and approval record |
-| 6. Run evaluation | Invoke native inference + judge stages only after approval hashes match | One distinct native run directory per target |
+| 3. Define policy | ASSERT flow notebook: edit the selected policy's context, prohibited behavior, and permitted behavior | Policy YAML |
+| 4. Configure evaluation | ASSERT flow notebook: inspect generation budget, model roles, target prompt, rubric, and stage configurations | Secret-free native YAML configs |
+| 5. Generate and review tests | ASSERT flow notebook: generate/review taxonomy, generate 8 prompts + 4 adaptive scenarios, generate two editable starters, inspect/customize, confirm review and combine | Reviewed native taxonomy/test set and review hashes |
+| 6. Run evaluation | Verify review hashes and automatically freeze inputs on first evaluation; reuse the matching frozen record for native inference + judging across targets | One distinct native run directory per target |
 | 7. Show results | Read saved artifacts into Python; show counts, rates, errors, transcripts, and evidence | Native artifacts and small descriptive tables |
 | 8. Compare models | Repeat inference + judging on the same approved set for the remaining targets | Three-model comparison with shared-provenance checks |
 
 The infrastructure notebook runs between setup and connections as the prerequisite milestone, not as an alternative evaluation section.
+
+The learner-facing setup ends after model connections in `02_configure.ipynb`.
+Policy selection and all evaluation steps live together in `03_assert_flow.ipynb`,
+which can be reused for new policies without repeating setup.
 
 #### Authoring and Generation
 
@@ -187,7 +190,9 @@ The infrastructure notebook runs between setup and connections as the prerequisi
 
 Use ASSERT systematization and test-generation stages, not an all-handwritten substitute. Pause to inspect taxonomy labels because `permissible` belongs to taxonomy categories, not test input rows. Keep exactly two reviewed starter categories, one permitted and one prohibited. Native stratified behavior sampling assigns 4/4 prompt cases and 2/2 scenarios to those categories. Then inspect generated content. Approval requires exactly the requested generated counts, valid native records, unique IDs, valid taxonomy references, and semantically correct examples of both classifications in both interaction types.
 
-Handwritten additions use ASSERT's native JSONL shape. Do not silently drop malformed cases or reinterpret unknown categories as permitted. Correct review inputs rather than launching an unbounded regeneration loop. Learners can raise the documented budgets explicitly.
+Each new suite has a separate paid native generation pass for two editable starter prompts, stratified against its reviewed taxonomy. Preserve the native output in `generated-extra-tests.jsonl`, and populate the suite-local `extra-tests.jsonl` with distinct `starter-` IDs. The examples are generated from the current policy rather than copied or relabeled from a fixed file. Before approval, rerunning the starter cell validates and reuses existing editable tests with an explicit no-generation message and redisplays their table/link without paid calls or writes. Never overwrite editable tests or approved suites; file links and merging never regenerate them.
+
+Learners may customize those examples or append handwritten additions with `manual-` IDs using ASSERT's native JSONL shape. Do not silently drop malformed cases or reinterpret unknown categories as permitted. Correct review inputs rather than launching an unbounded regeneration loop. Learners can raise the documented budgets explicitly.
 
 #### Execution and Reproducibility
 

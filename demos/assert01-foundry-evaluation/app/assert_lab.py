@@ -25,8 +25,9 @@ if TYPE_CHECKING:
 
 
 DEMO_ROOT = Path(__file__).resolve().parents[1]
-ALIASES = ("older", "intermediate", "newer")
+ALIASES = ("older_model", "intermediate_model", "newer_model")
 TARGET_ENV = {alias: f"ASSERT_TARGET_{alias.upper()}" for alias in ALIASES}
+LEGACY_ALIASES = {alias.removesuffix("_model"): alias for alias in ALIASES}
 
 
 def _text(value: object, name: str) -> str:
@@ -80,8 +81,9 @@ class ModelDeployment:
         capacity = data["capacity"]
         if type(capacity) is not int:
             raise ValueError("capacity must be a positive integer")
+        alias = _text(data["alias"], "alias")
         return cls(
-            _text(data["alias"], "alias"),
+            LEGACY_ALIASES.get(alias, alias),
             _text(data["deploymentName"], "deploymentName"),
             _text(data["modelName"], "modelName"),
             _text(data["modelVersion"], "modelVersion"),
@@ -216,6 +218,12 @@ def load_connections(*, root: Path = DEMO_ROOT) -> DeploymentMetadata:
     values = dotenv_values(env_path)
     if "AZURE_API_KEY" in values or "AZURE_AD_TOKEN" in values:
         raise ValueError("Regenerate the non-secret Entra settings; keys/tokens must not be stored in env/.env")
+    for old_alias, alias in LEGACY_ALIASES.items():
+        old_name = f"ASSERT_TARGET_{old_alias.upper()}"
+        if old_name in values:
+            if TARGET_ENV[alias] in values:
+                raise ValueError(f"Both {old_name} and {TARGET_ENV[alias]} are stored; regenerate connection settings")
+            values[TARGET_ENV[alias]] = values.pop(old_name)
     for name, expected in metadata.environment().items():
         if values.get(name) != expected:
             raise ValueError(f"Generated {name} does not match deployment.json; rerun deployment metadata export")
@@ -223,6 +231,8 @@ def load_connections(*, root: Path = DEMO_ROOT) -> DeploymentMetadata:
         os.environ[name] = _text(values[name], name)
     for name in ("AZURE_API_KEY", "AZURE_OPENAI_API_KEY", "OPENAI_API_KEY", "AZURE_AD_TOKEN"):
         os.environ.pop(name, None)
+    for old_alias in LEGACY_ALIASES:
+        os.environ.pop(f"ASSERT_TARGET_{old_alias.upper()}", None)
     if metadata.skipped_deployment is not None:
         os.environ.pop(TARGET_ENV[metadata.skipped_deployment.alias], None)
     return metadata
@@ -424,14 +434,13 @@ def _data_path(name: str, root: Path) -> Path:
     directory = (root / "data").resolve()
     path = (directory / name).resolve()
     if not path.is_relative_to(directory):
-        raise ValueError("Policy and additions must remain under data/")
+        raise ValueError("Policies must remain under data/")
     return path
 
 
 def load_evaluation(*, root: Path = DEMO_ROOT) -> tuple[Policy, LabSettings]:
     settings = LabSettings.from_dict(yaml.safe_load((root / "data" / "lab.yaml").read_text(encoding="utf-8")))
     policy = Policy.from_dict(yaml.safe_load(_data_path(settings.policy_path, root).read_text(encoding="utf-8")))
-    _data_path(settings.extra_tests_path, root)
     return policy, settings
 
 
@@ -586,6 +595,12 @@ def _shared(settings: LabSettings, metadata: DeploymentMetadata, policy: Policy)
     }
 
 
+def policy_collection(policy_id: str, revision: str, *, root: Path = DEMO_ROOT) -> Path:
+    """Keep collection paths compact for the native viewer's Windows temporary files."""
+    identity = {"policy_id": _text(policy_id, "policy.id"), "revision": _text(revision, "policy.revision")}
+    return artifact_path("collections", f"c-{_digest(identity)[:12]}", root=root)
+
+
 def create_suite(
     settings: LabSettings, metadata: DeploymentMetadata, *, root: Path = DEMO_ROOT
 ) -> Path:
@@ -594,11 +609,11 @@ def create_suite(
     for alias in (settings.generation_target, *settings.comparison_targets):
         _model(alias, metadata)
     shared = _shared(settings, metadata, policy)
-    suffix = _digest({"policy": _file_hash(policy_path), "shared": shared})[:12]
-    suite = artifact_path(
-        "suites", f"{policy.id[:12]}-{policy.revision[:8]}-{suffix[:8]}-{uuid4().hex[:8]}", root=root
-    )
+    collection = policy_collection(policy.id, policy.revision, root=root)
+    suite = collection / f"s-{uuid4().hex[:8]}"
+    validate_native_paths(suite / "intermediate-123456789abc")
     suite.mkdir(parents=True, exist_ok=False)
+    _write_json(collection / "collection.json", {"policy_id": policy.id, "revision": policy.revision})
     (suite / "policy.yaml").write_bytes(policy_path.read_bytes())
     _write_json(suite / "evaluation-settings.json", {"lab": asdict(settings), "shared": shared})
     return suite
@@ -647,9 +662,11 @@ def _emit_config(
 
 def generation_config(
     suite: Path, settings: LabSettings, metadata: DeploymentMetadata, *,
-    taxonomy_only: bool, root: Path = DEMO_ROOT,
+    taxonomy_only: bool, starters_only: bool = False, root: Path = DEMO_ROOT,
 ) -> Path:
     _unapproved(suite)
+    if taxonomy_only and starters_only:
+        raise ValueError("Taxonomy and editable starter generation are separate passes")
     cfg = _native_config(suite, settings, metadata)
     pipeline = dict(_object(cfg["pipeline"], "pipeline"))
     model = {"name": provider_model(_model(settings.generation_target, metadata)), "max_tokens": 8192}
@@ -660,16 +677,22 @@ def generation_config(
         }
     else:
         validate_taxonomy(_json(suite / "taxonomy.json"))
+        counts = (("prompt", 2),) if starters_only else (
+            ("prompt", settings.prompt_count), ("scenario", settings.scenario_count)
+        )
         pipeline["test_set"] = {
             "model": model, "taxonomy_path": str((suite / "taxonomy.json").resolve()),
-            "save_path": str((suite / "generated-test-set.jsonl").resolve()),
+            "save_path": str((suite / (
+                "generated-extra-tests.jsonl" if starters_only else "generated-test-set.jsonl"
+            )).resolve()),
             **{
                 kind: {"sample_size": count, "sampling": {"method": "stratified", "stratify_by": ["behavior"]}}
-                for kind, count in (("prompt", settings.prompt_count), ("scenario", settings.scenario_count))
+                for kind, count in counts
             },
         }
     cfg["pipeline"] = pipeline
-    return _emit_config(suite, cfg, "taxonomy" if taxonomy_only else "generation", root=root)
+    name = "taxonomy" if taxonomy_only else ("starters" if starters_only else "generation")
+    return _emit_config(suite, cfg, name, root=root)
 
 
 def run_native(config: Path, *, root: Path = DEMO_ROOT) -> None:
@@ -680,15 +703,53 @@ def run_native(config: Path, *, root: Path = DEMO_ROOT) -> None:
     )
 
 
-def generate_candidates(suite: Path, settings: LabSettings, metadata: DeploymentMetadata, *, root: Path = DEMO_ROOT) -> None:
-    """Preserve the released runner's versioned output before handwritten merging."""
-    run_native(generation_config(suite, settings, metadata, taxonomy_only=False, root=root), root=root)
+def _native_test_set(suite: Path) -> Path:
     latest = _object(_json(suite / "latest.json")["artifacts"], "native artifact references")
     reference = _object(latest["test_set"], "native test-set reference")
     native = (suite / _text(reference["path"], "native test-set path")).resolve()
     if not native.is_relative_to(suite.resolve()):
         raise ValueError("Native generated artifact reference escapes suite")
-    (suite / "generated-test-set.jsonl").write_bytes(native.read_bytes())
+    return native
+
+
+def generate_candidates(suite: Path, settings: LabSettings, metadata: DeploymentMetadata, *, root: Path = DEMO_ROOT) -> None:
+    """Preserve the released runner's versioned output before editable-test merging."""
+    run_native(generation_config(suite, settings, metadata, taxonomy_only=False, root=root), root=root)
+    (suite / "generated-test-set.jsonl").write_bytes(_native_test_set(suite).read_bytes())
+
+
+def _extra_tests_path(suite: Path, settings: LabSettings) -> Path:
+    path = (suite / settings.extra_tests_path).resolve()
+    if path.parent != suite.resolve() or path.suffix != ".jsonl" or path.name in {
+        "generated-test-set.jsonl", "generated-extra-tests.jsonl", "reviewed-test-set.jsonl", "test_set.jsonl",
+    }:
+        raise ValueError("extra_tests_path must name a separate JSONL file directly inside the suite")
+    return path
+
+
+def generate_starter_tests(
+    suite: Path, settings: LabSettings, metadata: DeploymentMetadata, *, root: Path = DEMO_ROOT
+) -> None:
+    """Generate examples once per suite; reuse existing editable tests on reruns."""
+    _unapproved(suite)
+    destination = _extra_tests_path(suite, settings)
+    if destination.exists():
+        validate_cases(read_cases(destination), validate_taxonomy(_json(suite / "taxonomy.json")), coverage=False)
+        print(f"Using existing editable tests; no generation or paid model calls: {destination}")
+        return
+    run_native(generation_config(
+        suite, settings, metadata, taxonomy_only=False, starters_only=True, root=root
+    ), root=root)
+    native = _native_test_set(suite)
+    rows = read_cases(native)
+    labels = validate_taxonomy(_json(suite / "taxonomy.json"))
+    if validate_cases(rows, labels, coverage=False) != {"prompt:permitted": 1, "prompt:prohibited": 1}:
+        raise ValueError("ASSERT must generate exactly one permitted and one prohibited starter prompt")
+    (suite / "generated-extra-tests.jsonl").write_bytes(native.read_bytes())
+    _write_cases(destination, [
+        {**row, "test_case_id": f"starter-{'permitted' if labels[case_category(row)] else 'prohibited'}"}
+        for row in rows
+    ])
 
 
 def merge_cases(suite: Path, settings: LabSettings, *, root: Path = DEMO_ROOT) -> list[Mapping[str, object]]:
@@ -702,13 +763,24 @@ def merge_cases(suite: Path, settings: LabSettings, *, root: Path = DEMO_ROOT) -
             raise ValueError(f"Native generation did not produce the configured {count} {kind} cases")
         if count % 2 == 0 and counts[f"{kind}:permitted"] != count // 2:
             raise ValueError(f"Review behavior-stratified {kind} assignments before approval")
-    additions = read_cases(_data_path(settings.extra_tests_path, root))
-    if any(not _text(row.get("test_case_id"), "handwritten ID").startswith("manual-") for row in additions):
-        raise ValueError("Handwritten test identifiers must start with manual-")
+    additions = read_cases(_extra_tests_path(suite, settings))
+    if any(not _text(row.get("test_case_id"), "editable test ID").startswith(("starter-", "manual-"))
+           for row in additions):
+        raise ValueError("Editable test identifiers must start with starter- or manual-")
     rows = [*generated, *additions]
     validate_cases(rows, labels)
     _write_cases(suite / "test_set.jsonl", rows)
+    _write_json(suite / "review.json", {"hashes": _review_hashes(suite, settings)})
     return rows
+
+
+def _review_hashes(suite: Path, settings: LabSettings) -> dict[str, str]:
+    names = (
+        "policy.yaml", "taxonomy.json", "evaluation-settings.json",
+        "generated-test-set.jsonl", "reviewed-test-set.jsonl", "test_set.jsonl",
+        _extra_tests_path(suite, settings).name,
+    )
+    return {name: _file_hash(suite / name) for name in names}
 
 
 def _approval_payload(
@@ -783,10 +855,14 @@ def evaluate_target(
     suite: Path, alias: str, settings: LabSettings, *, root: Path = DEMO_ROOT
 ) -> Path:
     metadata = load_connections(root=root)
+    if not (suite / "approval.json").exists():
+        if _json(suite / "review.json").get("hashes") != _review_hashes(suite, settings):
+            raise ValueError("Inputs changed since review; rerun Review and combine tests before evaluation")
+        approve_suite(suite, settings, metadata, reviewed=True, root=root)
     approved = verify_approval(suite, settings, metadata, root=root)
     target = _model(alias, metadata)
     verify_live_deployments(metadata, [alias, settings.tester_target, settings.judge_target])
-    run_id = f"{alias}-{uuid4().hex[:12]}"
+    run_id = f"{alias.removesuffix('_model')}-{uuid4().hex[:12]}"
     run = suite / run_id
     validate_native_paths(run)
     run.mkdir(exist_ok=False)

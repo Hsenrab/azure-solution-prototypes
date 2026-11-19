@@ -15,7 +15,7 @@
     "Microsoft Foundry",
     "Azure OpenAI model deployments"
   ],
-  "data_requirements": "Synthetic policy and cases only; defaults generate 8 prompts and 4 adaptive scenarios plus two handwritten prompts. Review before target inference.",
+  "data_requirements": "Synthetic policy and cases only; defaults generate 8 prompts and 4 adaptive scenarios plus two fresh editable starter prompts per suite. Review before target inference.",
   "security_notes": "Keyless native Entra authentication using Azure CLI identity; local auth disabled in Bicep. No keys or tokens in demo files or notebook outputs. Learning lab, not production certification.",
   "setup_time_estimate": "20-40 minutes after Azure access, policy, and model quota are confirmed",
   "last_updated": "2026-11-09"
