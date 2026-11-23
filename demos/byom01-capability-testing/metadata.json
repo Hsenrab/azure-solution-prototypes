@@ -1,7 +1,7 @@
 {
   "demo_name": "byom01-capability-testing",
   "problem_statement": "BYOM capability experiments need a repeatable Azure resource foundation.",
-  "hypothesis": "An engineer can provision the gateway, AI resource/project, and search service through notebooks without manually creating resources or copying connection values.",
+  "hypothesis": "An engineer can provision the gateway, consuming Foundry project, search service, and a separate Sweden Central GPT-5.4 backend through notebooks without manual resource creation or copying connection values.",
   "customer_scenario": "Engineers preparing bring-your-own-model capability experiments.",
   "status": "proposed",
   "owner": "Prototype Team",
@@ -16,7 +16,7 @@
     "Foundry IQ (Azure AI Search)"
   ],
   "data_requirements": "No data required; provisioning only.",
-  "security_notes": "Public authenticated endpoints. No service connections, API key retrieval, or policy-bypass tags. Generated environment values are ignored by Git.",
+  "security_notes": "Public authenticated endpoints; backend local key authentication disabled. No service connections, runtime role assignments, key retrieval, or policy-bypass tags. GlobalStandard inference may process outside Sweden. Generated settings are ignored by Git.",
   "setup_time_estimate": "5-10 minutes for local setup; Azure provisioning time varies, especially APIM.",
-  "last_updated": "2026-11-20"
+  "last_updated": "2026-11-23"
 }

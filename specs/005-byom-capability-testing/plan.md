@@ -4,6 +4,54 @@
 
 **Input**: Approved provisioning-only scope and public-endpoint clarification.
 
+The original plan below records the first slice. The following extension plan
+supersedes its one-group/no-model limits; original validation evidence is retained.
+
+## Backend Extension Plan (2026-11-23)
+
+Use a second resource-group-scoped template and small additional deployment
+notebook steps, not a subscription-wide rewrite. Default backend group:
+`rg-byom01-backend-swc`; location: `swedencentral`. No backend project, cross-service
+RBAC, gateway routes, or connected-model registration in this slice.
+
+| Source | Decision | Reason |
+|---|---|---|
+| `demos/byom01-capability-testing/infra/main.bicep` | Reuse unchanged | Preserve current consumer resources and UK South location |
+| `demos/assert01-foundry-evaluation/infra/main.bicep` | Adapt account/deployment pattern into `demos/byom01-capability-testing/infra/backend.bicep` | Current AIServices account and account-level OpenAI deployment; omit unrelated project/RBAC and preserve BYOM auth defaults |
+| `demos/byom01-capability-testing/notebooks/01_deploy_infra.ipynb` | Adapt | Add backend catalog/quota, compilation, group/deployment, and environment output steps using the existing SDK journey |
+| `demos/byom01-capability-testing/requirements.txt` | Adapt | Add Cognitive Services management SDK for catalog/quota discovery |
+| `demos/byom01-capability-testing/notebooks/00_setup.ipynb`, `notebooks/X_destroy.ipynb`, `app/notebook_helpers.py` | Reuse unchanged | Preserve canonical flows and unrelated local edits |
+| BYOM README, metadata, environment example; existing spec/contract/validation guide | Adapt | Describe two groups, model charges, generated backend fields, and targeted cleanup |
+
+Model research: live Sweden Central catalog lists generally available `gpt-5.4`,
+default version `2026-03-05`, supporting GlobalStandard. Subscription quota has
+890 units available at discovery. Use 100 units (100,000 TPM), as approved in the
+capacity follow-up; the original live validation used 10 units.
+resolve the version and recheck quota in the notebook before creating resources.
+GlobalStandard may process outside Sweden; this is not a Sweden-only residency claim.
+Stable Bicep schemas for account/deployment are `2026-09-01`. AVM discovery found
+an account module using older `2025-06-01` types; retain the repository's current
+raw-resource pattern instead of changing deployment tooling for this small delta.
+
+Live policy review confirms the consumer already has `disableLocalAuth: true`.
+Define that same behavior explicitly for the new backend in Bicep; do not rely on
+tenant Modify policy to patch an omitted property. Existing consumer Bicep is
+unchanged under the approved scope.
+
+Validation: compile both templates, parse notebook code, run targeted notebook
+hygiene, exercise generated output/failure behavior, then execute actual backend
+notebook steps in the selected subscription. Verify model properties and
+idempotency. Reuse existing consumer deployment outputs for the environment-write
+check without redeploying existing services; preserve the existing local environment
+file during validation. Delete/purge only the newly created backend and verify both
+cleanup and the unchanged consumer inventory. No inference/RBAC changes are needed
+to prove this provisioning slice. No new test framework or production hardening.
+
+Constitution check: approved two-group extension, self-contained Bicep-first
+platform definitions, SDK-first consumers, explicit subscription, unchanged public
+authentication patterns, no fallbacks/catch wrappers, canonical setup/destroy
+unchanged, docs/metadata aligned, and existing notebook hygiene preserved.
+
 ## Summary
 
 Create `demos/byom01-capability-testing/` with setup, deployment, and cleanup

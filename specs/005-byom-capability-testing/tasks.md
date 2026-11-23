@@ -7,6 +7,50 @@
 **Scope**: The approved provisioning-only slice. No service connections, models,
 gateway routes, search indexes, BYOM functionality, or evaluations.
 
+The original tasks/evidence below describe the first slice. The approved
+2026-11-23 extension adds model hosting only; integrations remain deferred.
+
+## Backend Extension Tasks
+
+- [X] T009 [US1] Add `demos/byom01-capability-testing/infra/backend.bicep`: deterministic AIServices/S0 account and gpt-5.4 deployment in Sweden Central, current stable APIs, catalog-supplied version, GlobalStandard capacity 10, and backend outputs; reuse the ASSERT account/deployment pattern without its unrelated RBAC/project.
+- [X] T010 [US1] Extend `demos/byom01-capability-testing/notebooks/01_deploy_infra.ipynb`, `requirements.txt`, and `env/.env.example`: SDK catalog/quota selection, backend compilation/group/deployment, and generated backend fields after both deployments succeed.
+- [X] T011 Update `demos/byom01-capability-testing/README.md`, `metadata.json`, `specs/005-byom-capability-testing/data-model.md`, and `quickstart.md` for scope, charges, two-group settings, and targeted backend cleanup using the unchanged canonical destroy notebook.
+- [X] T012 Validate both templates and changed notebook locally; execute backend notebook steps live, verify SC-005/SC-006 and unchanged consumer inventory, then delete/purge only validation-created backend resources and verify SC-007. Record actual evidence in `specs/005-byom-capability-testing/tasks.md`.
+
+Dependencies: T010 follows T009; T011 follows T010; T012 follows T010/T011.
+
+Capacity follow-up approved on 2026-11-23: change backend Bicep and notebook
+defaults to 100 units (100,000 TPM), and align current instructions/contracts.
+The historical capacity-10 evidence below remains unchanged. No live deployment
+at capacity 100 was requested in this follow-up.
+
+### Backend Extension Evidence (2026-11-23)
+
+- Built-in Bicep compilation passed for both templates with zero diagnostics.
+  Notebook Python 3.10 syntax and unique IDs passed before hygiene formatting;
+  unchanged destroy notebook matched the canonical source byte-for-byte.
+- Targeted existing pre-commit hook stripped execution output/display-name
+  metadata; its subsequent run passed. A redundant final Python syntax/hygiene
+  check was interrupted and is not claimed as additional evidence.
+- SC-005 **passed live**: the actual backend notebook steps deployed AIServices/S0
+  in Sweden Central with GPT-5.4 version `2026-03-05`, GlobalStandard capacity 10,
+  public access, disabled local authentication, and NoAutoUpgrade.
+- SC-006 **passed live**: repeat deployment retained one account/model and identical
+  outputs. Actual environment-write code produced all 25 contract fields in a
+  temporary file; missing backend outputs failed without overwriting it.
+  Existing consumer deployment outputs were read, not redeployed; its existing
+  local environment file was not overwritten. No inference was performed.
+- SC-007 **passed live**: deleted only the newly created backend group and purged
+  its Foundry account. Group existence returned false and the targeted
+  soft-deleted account query returned an empty list. Pre-existing consumer
+  inventory matched before deployment and after cleanup.
+- Backend infrastructure/model hosting is implemented in Bicep; notebook steps
+  consume it using the SDK. No local workaround or catch-and-explain wrapper was
+  added. Setup and destroy remain unchanged; cleanup targeting is documented.
+- No validation-created resources remain. The pre-existing consumer resources
+  remain. Gateway routes and connected-model registration are still deferred.
+- No Spec Kit extension hooks are configured.
+
 **Validation**: Use existing local checks; no new test framework or test suite.
 Live Azure acceptance is authorized for the agreed resources and standard paid
 SKUs. Clean up resources created for validation, including Foundry/APIM purges,

@@ -4,7 +4,10 @@
 
 **Created**: 2026-11-19
 
-**Status**: Approved scope; ready for planning
+**Status**: Approved scope, including the backend extension below
+
+The original resource-only slice is recorded below. The approved backend
+extension at the end supersedes its single-group and no-model constraints.
 
 **Input**: Create a new BYOM capability testing demo, reusing
 `evalgw02-aoai-apim-eval`. Step one provides setup notebooks and Bicep provisioning
@@ -133,3 +136,37 @@ the project exist, and their identifiers and endpoints are saved locally.
   validation, including Foundry/APIM soft-delete purges, and verify cleanup.
   Do not delete unrelated or pre-existing resources. Report live evidence
   separately from local checks and explicitly identify anything remaining.
+
+## Approved Extension: Separate GPT-5.4 Backend (2026-11-23)
+
+Approved capacity follow-up: 100 GlobalStandard quota units (100,000 TPM).
+The earlier live validation at capacity 10 does not verify this increased allocation.
+
+**Problem**: The gateway needs a hosted model backend separate from the consuming
+Foundry project for a later connected-model demonstration.
+
+**Hypothesis**: The deployment journey can provision a second Foundry account
+with a `gpt-5.4` deployment in a separate Sweden Central resource group and
+generate its connection settings, leaving the existing consumer resources unchanged.
+
+**Scope**: Add the backend group/account/model, model catalog/quota selection,
+generated backend settings, and cleanup instructions. Keep gateway routing,
+connected-model registration, inference tests, and Search integration out of scope.
+No backend project is required to host an account-level model deployment.
+
+**Constraints**: Same explicitly selected subscription; `swedencentral` for the
+backend only; existing consumer location remains unchanged. Preserve public
+authenticated endpoints and current deployment/authentication patterns. Use Bicep
+for platform behavior and the Python SDK for deployment and model discovery.
+Resolve a current model version from the regional catalog; never silently change
+model, region, or SKU. Live validation is approved; remove only newly created
+validation resources and purge their soft-deleted accounts.
+
+**Acceptance**:
+
+- **SC-005**: A backend account and `gpt-5.4` deployment succeed in the separate
+  Sweden Central group; configured version/SKU/capacity match the live catalog.
+- **SC-006**: Successful deployment generates both consumer and backend settings
+  without keys or manual copying; unchanged-input redeployment uses the same names.
+- **SC-007**: Targeted cleanup removes the backend group and soft-deleted account,
+  without deleting or changing pre-existing consumer resources.

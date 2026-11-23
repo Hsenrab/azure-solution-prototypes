@@ -12,7 +12,8 @@ that the demo already exists or has been deployed.
   region selected before deployment. Respect inherited Azure Policy; do not
   bypass it with tags or automatic network changes.
 - The user has approved live validation with APIM Standard, Search S1, and Foundry
-  S0. No model inference is run in this slice. Cleanup after validation is required.
+  S0, including a separate Sweden Central GPT-5.4 GlobalStandard backend (capacity
+  100). No model inference is run in this slice. Cleanup after validation is required.
 
 ## Local Authoring Checks
 
@@ -20,6 +21,7 @@ Run from the repository root after implementation:
 
 ```powershell
 az bicep build --file .\demos\byom01-capability-testing\infra\main.bicep --stdout
+az bicep build --file .\demos\byom01-capability-testing\infra\backend.bicep --stdout
 ```
 
 Run notebook cleanup separately:
@@ -47,9 +49,12 @@ Verify cleanup and explicitly report anything remaining.
    Await the actual deployment result.
 3. Verify the resource group contains APIM Standard (one unit), Foundry S0 with
    one child project, and search Standard (one replica/partition), with public
-   authenticated endpoints.
+   authenticated endpoints. Verify the second group contains a Sweden Central
+   AIServices/S0 account and GPT-5.4 deployment with catalog-selected version,
+   GlobalStandard SKU, capacity 100, and local authentication disabled.
 4. Verify every field in [the environment contract](./data-model.md) is populated
-   automatically, and no secrets or integration/test settings were generated.
+   automatically, including the backend fields, and no secrets or integration/test
+   settings were generated.
 5. Repeat deployment with unchanged inputs. Confirm the same resources are
    updated without duplicates.
 6. Before cleanup, select the exact subscription recorded in the environment.
@@ -58,6 +63,9 @@ Verify cleanup and explicitly report anything remaining.
    README's explicit targeting instructions before running destructive steps.
 7. Run the standard destroy notebook, review its target/resources and confirmation
    flags, and complete deletion, Foundry purge, and resource-group removal.
+   Target the backend and consumer separately in fresh kernels using the explicit
+   environment mappings in the demo README. Do not delete pre-existing consumer
+   resources when validating only this extension.
 8. Purge only this demo's APIM service using the saved values:
 
 ```powershell
@@ -72,5 +80,12 @@ notebook's Cognitive Services-only verification as proof of APIM purging.
 
 Report local checks separately from live outcomes. If live checks have not been
 executed or prerequisites block them, mark the corresponding SC-001 through
-SC-004 outcomes as not run;
+SC-007 outcomes as not run;
 do not claim successful provisioning, idempotency, or cleanup.
+
+For backend-only validation, execute the notebook's configuration/authentication,
+backend catalog/compile/group/deploy steps without redeploying the consumer.
+Read the existing successful consumer ARM deployment outputs for the environment
+write check, directing its output to a temporary file rather than overwriting
+existing local settings. Verify backend idempotency, then delete/purge only the
+newly created backend and compare the pre-existing consumer inventory.
