@@ -1,0 +1,22 @@
+{
+  "demo_name": "byom01-capability-testing",
+  "problem_statement": "BYOM capability experiments need a repeatable Azure resource foundation.",
+  "hypothesis": "An engineer can provision the gateway, AI resource/project, and search service through notebooks without manually creating resources or copying connection values.",
+  "customer_scenario": "Engineers preparing bring-your-own-model capability experiments.",
+  "status": "proposed",
+  "owner": "Prototype Team",
+  "technologies": [
+    "Python",
+    "Jupyter",
+    "Bicep"
+  ],
+  "azure_services": [
+    "Azure API Management",
+    "Microsoft Foundry",
+    "Foundry IQ (Azure AI Search)"
+  ],
+  "data_requirements": "No data required; provisioning only.",
+  "security_notes": "Public authenticated endpoints. No service connections, API key retrieval, or policy-bypass tags. Generated environment values are ignored by Git.",
+  "setup_time_estimate": "5-10 minutes for local setup; Azure provisioning time varies, especially APIM.",
+  "last_updated": "2026-11-20"
+}
