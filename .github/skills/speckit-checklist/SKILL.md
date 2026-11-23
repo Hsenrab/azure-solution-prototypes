@@ -8,9 +8,12 @@ metadata:
 ---
 
 
-## Checklist Purpose: "Unit Tests for English"
+## Checklist Purpose: Requirements Review, Not Execution
 
-**CRITICAL CONCEPT**: Checklists are **UNIT TESTS FOR REQUIREMENTS WRITING** - they validate the quality, clarity, and completeness of requirements in a given domain.
+Checklists review the quality of the agreed prototype requirements. They are
+optional artifacts, created only when requested, not prerequisites for planning.
+Apply the constitution and the demo's hard constraints; do not broaden the
+hypothesis to fill generic review categories.
 
 **NOT for verification/testing**:
 
@@ -21,13 +24,13 @@ metadata:
 
 **FOR requirements quality validation**:
 
-- ✅ "Are visual hierarchy requirements defined for all card types?" (completeness)
-- ✅ "Is 'prominent display' quantified with specific sizing/positioning?" (clarity)
-- ✅ "Are hover state requirements consistent across all interactive elements?" (consistency)
-- ✅ "Are accessibility requirements defined for keyboard navigation?" (coverage)
-- ✅ "Does the spec define what happens when logo image fails to load?" (edge cases)
+- "Is the hypothesis stated with observable pass/fail evidence?" (clarity)
+- "Is the required APIM response shape specified?" (completeness)
+- "Do the identity/network constraints agree with the existing demo?" (consistency)
+- "Are paid model calls and prerequisites identified?" (assumptions)
 
-**Metaphor**: If your spec is code written in English, the checklist is its unit test suite. You're testing whether the requirements are well-written, complete, unambiguous, and ready for implementation - NOT whether the implementation works.
+Review whether the requirements are sufficient to implement and verify the
+hypothesis. Checking a review item does not prove that the notebook works.
 
 **Ownership and checkbox lifecycle**:
 
@@ -36,7 +39,9 @@ metadata:
 - `[x]` does NOT mean implementation work is complete.
 - This command generates or appends checklist items; it MUST NOT mark generated items `[x]`.
 - An agent may assist with evaluating items only when explicitly asked by the reviewer.
-- `checklists/requirements.md` is a separate built-in spec-quality checklist maintained by `/speckit-specify` and `/speckit-clarify`; do not treat that exception as applying to custom checklists generated here.
+- A legacy or explicitly requested `checklists/requirements.md` may exist;
+  `/speckit-clarify` may update applicable existing items. `/speckit-specify` no
+  longer creates that file by default.
 
 ## User Input
 
@@ -90,37 +95,13 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 2. **IF EXISTS**: Load `.specify/memory/constitution.md` for project principles and governance constraints.
 
-3. **Clarify intent (dynamic)**: Derive up to THREE initial contextual clarifying questions (no pre-baked catalog). They MUST:
-   - Be generated from the user's phrasing + extracted signals from spec/plan/tasks
-   - Only ask about information that materially changes checklist content
-   - Be skipped individually if already unambiguous in `$ARGUMENTS`
-   - Prefer precision over breadth
-
-   Generation algorithm:
-   1. Extract signals: feature domain keywords (e.g., auth, latency, UX, API), risk indicators ("critical", "must", "compliance"), stakeholder hints ("QA", "review", "security team"), and explicit deliverables ("a11y", "rollback", "contracts").
-   2. Cluster signals into candidate focus areas (max 4) ranked by relevance.
-   3. Identify probable audience & timing (author, reviewer, QA, release) if not explicit.
-   4. Detect missing dimensions: scope breadth, depth/rigor, risk emphasis, exclusion boundaries, measurable acceptance criteria.
-   5. Formulate questions chosen from these archetypes:
-      - Scope refinement (e.g., "Should this include integration touchpoints with X and Y or stay limited to local module correctness?")
-      - Risk prioritization (e.g., "Which of these potential risk areas should receive mandatory gating checks?")
-      - Depth calibration (e.g., "Is this a lightweight pre-commit sanity list or a formal release gate?")
-      - Audience framing (e.g., "Will this be used by the author only or peers during PR review?")
-      - Boundary exclusion (e.g., "Should we explicitly exclude performance tuning items this round?")
-      - Scenario class gap (e.g., "No recovery flows detected—are rollback / partial failure paths in scope?")
-
-   Question formatting rules:
-   - If presenting options, generate a compact table with columns: Option | Candidate | Why It Matters
-   - Limit to A–E options maximum; omit table if a free-form answer is clearer
-   - Never ask the user to restate what they already said
-   - Avoid speculative categories (no hallucination). If uncertain, ask explicitly: "Confirm whether X belongs in scope."
-
-   Defaults when interaction impossible:
-   - Depth: Standard
-   - Audience: Reviewer (PR) if code-related; Author otherwise
-   - Focus: Top 2 relevance clusters
-
-   Output the questions (label Q1/Q2/Q3). After answers: if ≥2 scenario classes (Alternate / Exception / Recovery / Non-Functional domain) remain unclear, you MAY ask up to TWO more targeted follow‑ups (Q4/Q5) with a one-line justification each (e.g., "Unresolved recovery path risk"). Do not exceed five total questions. Skip escalation if user explicitly declines more.
+3. **Clarify only what matters**:
+   - Use the requested focus and agreed spec/plan scope. Default to a short,
+     lightweight review, not a release gate.
+   - Ask through `ask_user` only if an unanswered choice materially changes that
+     review. Zero questions is normal; do not ask about absent production concerns.
+   - Do not ask for performance, recovery, accessibility, compliance, or other
+     requirements unless they are relevant to the hypothesis or explicitly requested.
 
 4. **Understand user request**: Combine `$ARGUMENTS` + clarifying answers:
    - Derive checklist theme (e.g., security, review, deploy, ux)
@@ -156,16 +137,16 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **Clarity**: Are requirements unambiguous and specific?
    - **Consistency**: Do requirements align with each other?
    - **Measurability**: Can requirements be objectively verified?
-   - **Coverage**: Are all scenarios/edge cases addressed?
+   - **Coverage**: Are the scenarios needed to validate the hypothesis addressed?
 
-   **Category Structure** - Group items by requirement quality dimensions:
+   **Category Structure** - Use only relevant dimensions; omit unused categories:
    - **Requirement Completeness** (Are all necessary requirements documented?)
    - **Requirement Clarity** (Are requirements specific and unambiguous?)
    - **Requirement Consistency** (Do requirements align without conflicts?)
    - **Acceptance Criteria Quality** (Are success criteria measurable?)
-   - **Scenario Coverage** (Are all flows/cases addressed?)
-   - **Edge Case Coverage** (Are boundary conditions defined?)
-   - **Non-Functional Requirements** (Performance, Security, Accessibility, etc. - are they specified?)
+   - **Scenario Coverage** (Are the agreed notebook outcomes and prerequisites clear?)
+   - **Edge Case Coverage** (Only boundaries affecting the hypothesis)
+   - **Non-Functional Requirements** (Only explicitly scoped attributes or hard constraints)
    - **Dependencies & Assumptions** (Are they documented and validated?)
    - **Ambiguities & Conflicts** (What needs clarification?)
 
@@ -195,6 +176,10 @@ You **MUST** consider the user input before proceeding (if not empty).
 
    **EXAMPLES BY QUALITY DIMENSION**:
 
+   Use examples below only when their subject is already in scope. They are not a
+   catalog of requirements to add. Numeric targets and fallback/recovery behavior
+   are not defaults; observable pass/fail evidence can be sufficient.
+
    Completeness:
    - "Are error handling requirements defined for all API failure modes? [Gap]"
    - "Are accessibility requirements specified for all interactive elements? [Completeness]"
@@ -218,16 +203,17 @@ You **MUST** consider the user input before proceeding (if not empty).
    - "Are visual hierarchy requirements measurable/testable? [Acceptance Criteria, Spec §FR-1]"
    - "Can 'balanced visual weight' be objectively verified? [Measurability, Spec §FR-2]"
 
-   **Scenario Classification & Coverage** (Requirements Quality Focus):
-   - Check if requirements exist for: Primary, Alternate, Exception/Error, Recovery, Non-Functional scenarios
-   - For each scenario class, ask: "Are [scenario type] requirements complete, clear, and consistent?"
-   - If scenario class missing: "Are [scenario type] requirements intentionally excluded or missing? [Gap]"
-   - Include resilience/rollback when state mutation occurs: "Are rollback requirements defined for migration failures? [Gap]"
+   **Scope Filtering**:
+   - Review the agreed notebook journey, expected outputs, prerequisites, and hard constraints.
+   - An omitted production concern or alternative flow is not automatically a gap.
+   - Do not introduce fallback paths, diagnostics, new test suites, or hardening
+     merely to complete a checklist category.
+   - Named Azure services, SDKs, APIs, and response shapes are valid requirements
+     when they define the hypothesis or constraints; review their clarity and consistency.
 
    **Traceability Requirements**:
-   - MINIMUM: ≥80% of items MUST include at least one traceability reference
-   - Each item should reference: spec section `[Spec §X.Y]`, or use markers: `[Gap]`, `[Ambiguity]`, `[Conflict]`, `[Assumption]`
-   - If no ID system exists: "Is a requirement & acceptance criteria ID scheme established? [Traceability]"
+   - Link items to an existing requirement, heading, or hard constraint where practical.
+   - Do not require a percentage target or add an ID scheme just for checklist traceability.
 
    **Surface & Resolve Issues** (Requirements Quality Problems):
    Ask questions about the requirements themselves:
@@ -244,11 +230,10 @@ You **MUST** consider the user input before proceeding (if not empty).
 
    **🚫 ABSOLUTELY PROHIBITED** - These make it an implementation test, not a requirements test:
    - ❌ Any item starting with "Verify", "Test", "Confirm", "Check" + implementation behavior
-   - ❌ References to code execution, user actions, system behavior
+   - ❌ Claims that code executed successfully without execution evidence
    - ❌ "Displays correctly", "works properly", "functions as expected"
-   - ❌ "Click", "navigate", "render", "load", "execute"
    - ❌ Test cases, test plans, QA procedures
-   - ❌ Implementation details (frameworks, APIs, algorithms)
+   - ❌ New design requirements unrelated to the hypothesis or requested review
 
    **✅ REQUIRED PATTERNS** - These test requirements quality:
    - ✅ "Are [requirement type] defined/specified/documented for [scenario]?"
@@ -275,6 +260,10 @@ You **MUST** consider the user input before proceeding (if not empty).
 To avoid clutter, use descriptive types and clean up obsolete checklists when done.
 
 ## Example Checklist Types & Sample Items
+
+These are optional, scope-specific examples, not mandatory review areas. Apply
+the scope filtering above; do not add fallback, scale, or production requirements
+just because an example mentions them.
 
 **UX Requirements Quality:** `ux.md`
 

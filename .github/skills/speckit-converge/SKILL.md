@@ -1,6 +1,6 @@
 ---
 name: "speckit-converge"
-description: "Assess the current codebase against the feature's spec, plan, and tasks, then append any remaining unbuilt work as new tasks to tasks.md so implement can complete it."
+description: "Assess implementation and verification against the spec, plan, and tasks; append uncovered remaining work without duplicating unfinished tasks."
 compatibility: "Requires spec-kit project structure with .specify/ directory"
 metadata:
   author: "github-spec-kit"
@@ -63,13 +63,15 @@ Close the gap between what a feature's specification, plan, and tasks call for a
 codebase currently implements. Read `spec.md`, `plan.md`, and `tasks.md` as the **sole
 source of intent** (with the constitution as governing constraints), assess the current
 state of the code, determine which requirements, acceptance criteria, plan decisions, and
-existing tasks are unmet, incomplete, or only partially satisfied, and **append each piece
+existing tasks are unmet, incomplete, or unverified, and **append each piece
 of remaining work as a new, traceable task** at the bottom of `tasks.md` so that
 `/speckit-implement` can complete it. This command MUST run only after
 `/speckit-implement` has run on the current `tasks.md`, and after `/speckit-tasks` has produced a complete `tasks.md`.
 
 This is **not** a diff tool and does **not** track changes. It assesses the present state
 of the code relative to the feature's artifacts — no git, no branch comparison, no history.
+Implementation and verification are separate: code can be present while the notebook
+scenario is still blocked or not run. Do not report the hypothesis verified without evidence.
 
 ## Operating Constraints
 
@@ -89,6 +91,13 @@ When the codebase already satisfies everything, the command MUST leave `tasks.md
 **non-negotiable**. Code that violates a MUST principle is the highest-severity finding and
 produces a corresponding remediation task. If the constitution is an unfilled template,
 skip constitution checks gracefully rather than failing.
+
+**Prototype Scope**: Apply the plan's
+[reuse](../speckit-plan/SKILL.md#reuse-working-demo-code-first) and
+[verification](../speckit-plan/SKILL.md#verification-required-automated-test-suites-optional)
+guidance. Do not add automated test suites, optional design documents, generic
+scaffolding, or hardening merely to complete the review. Assess copied code in the
+target demo; success in the source demo is not target-scenario evidence.
 
 ## Execution Steps
 
@@ -112,17 +121,17 @@ Load only the minimal necessary context from each artifact:
 **From spec.md:**
 
 - Functional Requirements (FR-###)
-- Success Criteria (SC-###) — include only items requiring buildable work; exclude
-  post-launch outcome metrics and business KPIs
+- All Success Criteria (SC-###), including verification-only notebook outcomes
 - User Stories and their Acceptance Scenarios
 - Edge Cases (if present)
 
 **From plan.md:**
 
 - Architecture/stack choices and technical decisions
-- Data Model references
-- Phases and named touch-points (files/components the plan says will be created or edited)
+- Reuse decisions and optional design references, if present
+- Actual implementation steps and named touch-points (files/components to create or edit)
 - Technical constraints
+- Validation scenarios, expected outputs, prerequisites, paid operations, and evidence status
 
 **From tasks.md:**
 
@@ -139,7 +148,11 @@ Create an internal model (do not echo raw artifacts):
 
 - **Requirements inventory**: one stable key per FR-### / SC-### / user-story acceptance
   scenario (e.g. `US1/AC2`), plus the plan decisions and constitution principles that
-  impose buildable obligations.
+  impose implementation or verification obligations. Do not drop outcomes that
+  require execution rather than new code.
+- **Verification inventory**: for each acceptance outcome, record passed, failed,
+  blocked, or not-run status and the supporting run result/report for the current
+  scenario. Do not require committed notebook outputs or a new evidence document.
 - **Code-scope map**: from the file paths named in `plan.md` and `tasks.md`, plus a keyword
   search for the concepts each requirement describes, derive the set of source files and
   components in scope for assessment. Bound the assessment to these — do **not** infer
@@ -153,12 +166,18 @@ the spec, plan, tasks, and constitution; for corrective task chains, assess the 
 behavior, not superseded implementation details. Check both unmet obligations and
 implementation that contradicts, exceeds, or falls outside the stated intent.
 
+Assess implementation and verification separately. Inspect available run results
+or explicit execution reports as well as code; a checked task is not a run result.
+Do not make paid model calls or deploy resources merely to close an evidence gap
+during review. Report prerequisites and required verification work instead.
+
 For each item in the intent inventory, inspect the current code in scope and produce a
 `Finding` only where there is a gap. Classify every finding by **gap type**:
 
 - **`missing`**: the required work is absent from the code entirely.
 - **`partial`**: the work exists but does not yet fully satisfy the requirement /
-  acceptance criterion / plan decision.
+  acceptance criterion / plan decision, including missing or blocked required
+  scenario evidence. State when code is implemented but not yet verified.
 - **`contradicts`**: the code does something that conflicts with stated intent or a
   constitution MUST principle.
 - **`unrequested`**: the code contains work not called for by the spec, plan, or tasks
@@ -167,12 +186,15 @@ For each item in the intent inventory, inspect the current code in scope and pro
 
 Each `Finding` records: a stable id, the `source-ref` it traces to, the `gap-type`, a
 severity, and a short human-readable description with the evidence (the file/area observed).
+For verification gaps, include the execution status and exact missing evidence;
+do not label unrun behavior as failed or invent a code fix without evidence of a defect.
 
 **Edge cases:**
 
 - **Little or no code yet**: treat the entire specified scope as `missing` remaining work
   rather than failing.
-- **Nothing remains**: produce zero findings and follow the converged branch in Step 7.
+- **Nothing remains**: only when implementation obligations and required verification
+  outcomes are satisfied, produce zero findings and follow the converged branch in Step 7.
 
 ### 5. Assign Severity
 
@@ -201,17 +223,22 @@ Before appending anything, output a compact, severity-graded summary (no file wr
 - Constitution principles checked (or "skipped — template")
 - Findings by gap type (missing / partial / contradicts / unrequested)
 - Findings by severity
+- Verification outcomes: passed / failed / blocked / not run, with evidence or prerequisites
 
 ### 7. Append Convergence Tasks (or report converged)
 
-**If there are one or more actionable findings** (`tasks_appended` outcome):
+First map findings to existing unfinished tasks. Do not append a duplicate task
+when the needed implementation or verification work is already covered.
+
+**If there are actionable findings not covered by existing unfinished tasks**
+(`tasks_appended` outcome):
 
 Append to the **end** of `tasks.md`, per the append contract:
 
 1. Scan all existing task IDs; let `M` be the maximum. Determine the next phase number `N`
-   (highest existing phase + 1).
+   (highest existing phase + 1, or 1 when the task list has no numbered phases).
 2. Write a single new section header `## Phase N: Convergence`.
-3. Emit one checklist item per actionable finding, ordered CRITICAL/HIGH first, assigning
+3. Emit one checklist item per uncovered actionable finding, ordered CRITICAL/HIGH first, assigning
    zero-padded IDs `T{M+1:03d}, T{M+2:03d}, …`:
 
    ```markdown
@@ -225,20 +252,30 @@ Append to the **end** of `tasks.md`, per the append contract:
 
    Constitution-violation tasks MUST be emitted first and described as
    `CRITICAL`.
+   For verification-only gaps, prescribe the agreed notebook run and expected
+   outputs, with prerequisites/paid operations; do not prescribe a new test suite
+   or code changes merely because evidence is missing.
 4. Never reuse or renumber existing IDs. If a prior Convergence phase exists, add a new,
    separately-numbered one below it — do not touch the old one.
 
-**If there are no actionable findings** (`converged` outcome):
+**If findings remain but all are covered by existing unfinished tasks**
+(`work_remaining` outcome):
+
+- Leave `tasks.md` unchanged and report the task IDs and any blocking prerequisites.
+- Distinguish implemented code from verification still pending. Do not report convergence.
+
+**If there are no remaining implementation or verification gaps** (`converged` outcome):
 
 - Do **not** modify `tasks.md` at all — no empty phase header.
-- Report: **"✅ Converged — the implementation satisfies the spec, plan, and tasks."**
+- Report: **"Converged: the implementation and required verification satisfy the spec, plan, and tasks."**
 - Include the summary counts of what was checked.
 
 ### 8. Provide Next Actions (Handoff)
 
 - On `tasks_appended`: state how many tasks were appended under which phase, and recommend
-  running `/speckit-implement` to complete them; note that a follow-up converge
-  run will find fewer or no remaining items.
+  running `/speckit-implement` to complete them; report any verification prerequisites.
+- On `work_remaining`: name the existing tasks to finish or prerequisites to unblock;
+  do not generate duplicate work or recommend a PR as if verification passed.
 - On `converged`: recommend proceeding to review / opening a PR. No further implement pass
   is needed for this feature's specified scope.
 
@@ -252,7 +289,7 @@ After producing the result, check if `.specify/extensions.yml` exists in the pro
 - For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
   - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
   - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
-- Report the convergence outcome (`converged` or `tasks_appended`) in-session before listing
+- Report the convergence outcome (`converged`, `tasks_appended`, or `work_remaining`) in-session before listing
   any hooks, so users can decide whether to run optional follow-up commands.
 - When constructing command invocations from hook command names, replace dots (`.`) with hyphens (`-`). For example, `speckit.git.commit` → `/speckit-git-commit`.
 - For each executable hook, output the following based on its `optional` flag:

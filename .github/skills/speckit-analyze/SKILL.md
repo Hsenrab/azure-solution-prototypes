@@ -62,6 +62,14 @@ Identify inconsistencies, duplications, ambiguities, and underspecified items ac
 
 **Constitution Authority**: The project constitution (`.specify/memory/constitution.md`) is **non-negotiable** within this analysis scope. Constitution conflicts are automatically CRITICAL and require adjustment of the spec, plan, or tasks—not dilution, reinterpretation, or silent ignoring of the principle. If a principle itself needs to change, that must occur in a separate, explicit constitution update outside `/speckit-analyze`.
 
+**Prototype Scope**: Review the agreed hypothesis and hard constraints, not generic
+product completeness. Optional research/data-model/contracts/quickstart artifacts,
+independent MVPs, new automated test files, and production controls are not required
+by default. Apply the plan's
+[reuse](../speckit-plan/SKILL.md#reuse-working-demo-code-first) and
+[verification](../speckit-plan/SKILL.md#verification-required-automated-test-suites-optional)
+guidance. A technical service/API-specific acceptance criterion is valid.
+
 ## Execution Steps
 
 ### 1. Initialize Analysis Context
@@ -81,17 +89,18 @@ Load only the minimal necessary context from each artifact:
 
 **From spec.md:**
 
-- Overview/Context
+- Problem, hypothesis, scope, and hard constraints
 - Functional Requirements
-- Success Criteria (measurable outcomes — e.g., performance, security, availability, user success, business impact)
+- All Success Criteria, including notebook execution and expected output evidence
 - User Stories
 - Edge Cases (if present)
 
 **From plan.md:**
 
 - Architecture/stack choices
-- Data Model references
-- Phases
+- Reuse decisions and optional design references, if present
+- Changed files and actual implementation steps
+- Validation scenarios, prerequisites, paid operations, and reported evidence status
 - Technical constraints
 
 **From tasks.md:**
@@ -110,9 +119,17 @@ Load only the minimal necessary context from each artifact:
 
 Create internal representations (do not include raw artifacts in output):
 
-- **Requirements inventory**: For each Functional Requirement (FR-###) and Success Criterion (SC-###), record a stable key. Use the explicit FR-/SC- identifier as the primary key when present, and optionally also derive an imperative-phrase slug for readability (e.g., "User can upload file" → `user-can-upload-file`). Include only Success Criteria items that require buildable work (e.g., load-testing infrastructure, security audit tooling), and exclude post-launch outcome metrics and business KPIs (e.g., "Reduce support tickets by 50%").
+- **Requirements inventory**: Record every agreed Functional Requirement, Success
+  Criterion, and user-story acceptance scenario, using existing identifiers or headings.
+  Distinguish implementation obligations from verification-only outcomes; do not
+  discard a criterion merely because it requires a notebook run rather than new code.
+  Flag out-of-scope business/production targets for clarification instead of silently
+  excluding them or generating extra infrastructure to satisfy them.
 - **User story/action inventory**: Discrete user actions with acceptance criteria
 - **Task coverage mapping**: Map each task to one or more requirements or stories (inference by keyword / explicit reference patterns like IDs or key phrases)
+- **Verification mapping**: For each acceptance outcome, identify the planned scenario,
+  expected output, and verification task or valid existing evidence. A notebook run
+  can cover several criteria; new automated tests are not required.
 - **Constitution rule set**: Extract principle names and MUST/SHOULD normative statements
 
 ### 4. Detection Passes (Token-Efficient Analysis)
@@ -142,14 +159,21 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 
 #### E. Coverage Gaps
 
-- Requirements with zero associated tasks
+- Requirements without an implementation/verification task or applicable existing evidence
 - Tasks with no mapped requirement/story
-- Success Criteria requiring buildable work (performance, security, availability) not reflected in tasks
+- Acceptance outcomes without a clear way to collect and check evidence
+- Code presence or completed checkboxes presented as proof of scenario execution
+
+Before implementation, planned verification is sufficient for analysis readiness;
+do not report an unrun planned scenario as an implementation defect. Distinguish
+planned, passed, failed, blocked, and not-run evidence. Do not equate complete task
+mapping with a verified hypothesis or with automated test coverage.
 
 #### F. Inconsistency
 
 - Terminology drift (same concept named differently across files)
-- Data entities referenced in plan but absent in spec (or vice versa)
+- Conflicting data/interface constraints across artifacts; extra design detail in
+  the plan is not a conflict merely because it is absent from the spec
 - Task ordering contradictions (e.g., integration tasks before foundational setup tasks without dependency note)
 - Conflicting requirements (e.g., one requires Next.js while other specifies Vue)
 
@@ -176,8 +200,8 @@ Output a Markdown report (no file writes) with the following structure:
 
 **Coverage Summary Table:**
 
-| Requirement Key | Has Task? | Task IDs | Notes |
-|-----------------|-----------|----------|-------|
+| Requirement Key | Task or Existing Evidence | Verification Status | Notes |
+|-----------------|---------------------------|---------------------|-------|
 
 **Constitution Alignment Issues:** (if any)
 
@@ -187,7 +211,7 @@ Output a Markdown report (no file writes) with the following structure:
 
 - Total Requirements
 - Total Tasks
-- Coverage % (requirements with >=1 task)
+- Task/evidence mapping completeness (not automated test coverage or proof of execution)
 - Ambiguity Count
 - Duplication Count
 - Critical Issues Count

@@ -1,113 +1,69 @@
 # Implementation Plan: [FEATURE]
 
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-
-**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
-
-**Note**: This template is filled in by the `/speckit-plan` command; its definition describes the execution workflow.
+**Branch**: `[branch-name]` | **Date**: [DATE] | **Spec**: [link]
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+[Smallest technical approach that tests the spec's hypothesis]
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
-
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]
-
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]
-
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
-
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]
-
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-
-**Project Type**: [e.g., library/cli/web-service/mobile-app/compiler/desktop-app or NEEDS CLARIFICATION]
-
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]
-
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]
-
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+- **Demo**: `demos/<demo-name>/` [existing demo, or new demo from demo-template/]
+- **Language/runtime and dependencies**: [Reuse existing; list only relevant additions]
+- **Services and hard constraints**: [Relevant Azure services, identity/network
+  constraints, API/SDK compatibility, and cost implications]
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+Check before research/design and again after design. Record only applicable
+decisions and links, not copies of reusable procedures.
 
-[Gates determined based on constitution file]
+- [ ] Copilot guidance and applicable authoring skill/references followed
+- [ ] One problem/hypothesis; minimal scope and dependencies; demo self-contained
+- [ ] Bicep-first platform changes; existing identity/network constraints preserved
+- [ ] Significant strategy changes or exceptions explicitly approved by the user
+- [ ] Notebook journey and setup/destroy standards preserved where applicable
+- [ ] Hypothesis validation and existing CI/notebook hygiene gates preserved
 
-## Project Structure
+## Files and Implementation Steps
 
-### Documentation (this feature)
-
-```text
-specs/[###-feature]/
-├── plan.md              # This file (/speckit-plan command output)
-├── research.md          # Phase 0 output (/speckit-plan command)
-├── data-model.md        # Phase 1 output (/speckit-plan command)
-├── quickstart.md        # Phase 1 output (/speckit-plan command)
-├── contracts/           # Phase 1 output (/speckit-plan command)
-└── tasks.md             # Phase 2 output (/speckit-tasks command - NOT created by /speckit-plan)
-```
-
-### Source Code (repository root)
 <!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
+Use the existing demo layout. List only changed files and required steps for an
+extension. New demos start from demo-template/ and the standard notebook sources.
+Do not introduce root-level src/, frontend/, or backend/ scaffolding by default.
+Search other demos first. Prefer copying compatible working cells, helpers, and
+Bicep as-is with minimal substitutions; do not introduce cross-demo abstractions
+just to avoid duplication. Follow the plan skill's reuse guidance.
 -->
 
-```text
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
+1. `[demo-relative file path]`: [Smallest required change; identify any reused source
+   file/cell heading and necessary substitutions, or why suitable code is not reused]
+2. `[directly related docs/metadata path]`: [Update needed, if scope changes]
 
-tests/
-├── contract/
-├── integration/
-└── unit/
+## Validation
 
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
+Verification is required; a new automated test suite is not. Default to running the
+notebook scenario and checking expected outputs. Follow the
+[verification guidance](../../.github/skills/speckit-plan/SKILL.md#verification-required-automated-test-suites-optional).
 
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
+- **Acceptance evidence**: [Map spec success criteria to observable notebook outputs]
+- **Checks**: [Smallest relevant existing checks and notebook scenario; retain CI/hygiene gates]
+- **New automated tests (optional)**: [Only if requested or specific nontrivial
+  introduced/fixed logic warrants them; explain why, otherwise omit this item.
+  Do not invent coverage targets or require a new test framework.]
+- **Prerequisites and paid operations**: [Azure access/resources and calls needed]
+- **Run instructions**: [Link to the demo README/notebook; do not duplicate setup]
+- **Evidence status**: [What actually ran, what is planned, and what is blocked]
 
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
+## Decisions and Open Questions
 
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
-```
+[Only unresolved blockers or significant choices: decision, rationale, and sources.
+Include concise trade-offs and approval status for significant strategy changes.
+Remove this section if there are none.]
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
-
-## Complexity Tracking
-
-> **Fill ONLY if Constitution Check has violations that must be justified**
-
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+<!--
+plan.md is the only required planning output. Add research.md, data-model.md,
+contracts/, or quickstart.md only if substantial findings, nontrivial data rules,
+new/changed interface agreements, or a distinct run guide warrant them.
+Do not create empty artifacts or duplicate existing demo documentation.
+-->

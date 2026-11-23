@@ -1,0 +1,7 @@
+# Python >=3.11. ASSERT owns the LiteLLM provider, Pydantic, and YAML dependencies.
+assert-ai==0.3.0
+azure-identity>=1.27.0,<2
+azure-mgmt-resource>=26.0.0,<27
+azure-mgmt-cognitiveservices>=14.1.0,<15
+python-dotenv>=1.2.2,<2
+pandas>=2.2,<4
