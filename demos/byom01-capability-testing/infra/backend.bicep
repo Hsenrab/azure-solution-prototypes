@@ -36,6 +36,19 @@ resource backend 'Microsoft.CognitiveServices/accounts@2026-09-01' = {
   }
 }
 
+resource project 'Microsoft.CognitiveServices/accounts/projects@2026-09-01' = {
+  parent: backend
+  name: '${toLower(demoId)}-backend-project'
+  location: location
+  identity: {
+    type: 'SystemAssigned'
+  }
+  properties: {
+    displayName: 'BYOM GPT-5.4 backend'
+    description: 'Project for navigating the backend account and model deployment in Foundry'
+  }
+}
+
 resource model 'Microsoft.CognitiveServices/accounts/deployments@2026-09-01' = {
   parent: backend
   name: deploymentName
@@ -57,6 +70,8 @@ output backendResourceGroupName string = resourceGroup().name
 output backendLocation string = location
 output backendAccountName string = backend.name
 output backendResourceId string = backend.id
+output backendProjectName string = project.name
+output backendProjectResourceId string = project.id
 output backendEndpoint string = 'https://${backend.name}.services.ai.azure.com/'
 output backendOpenAIEndpoint string = 'https://${backend.name}.openai.azure.com/'
 output backendDeploymentName string = model.name

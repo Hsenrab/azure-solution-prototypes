@@ -1,8 +1,8 @@
 {
   "demo_name": "byom01-capability-testing",
-  "problem_statement": "BYOM capability experiments need a repeatable Azure resource foundation.",
-  "hypothesis": "An engineer can provision the gateway, consuming Foundry project, search service, and a separate Sweden Central GPT-5.4 backend through notebooks without manual resource creation or copying connection values.",
-  "customer_scenario": "Engineers preparing bring-your-own-model capability experiments.",
+  "problem_statement": "Provisioned resources alone do not make a gateway-managed model usable from Foundry.",
+  "hypothesis": "An engineer can configure a project-scoped connected model using managed identities, invoke GPT-5.4 through APIM from Foundry, and correlate the response with successful gateway backend evidence.",
+  "customer_scenario": "Engineers testing Foundry connected models through an existing API Management gateway, with a backend project for Foundry portal navigation.",
   "status": "proposed",
   "owner": "Prototype Team",
   "technologies": [
@@ -13,10 +13,12 @@
   "azure_services": [
     "Azure API Management",
     "Microsoft Foundry",
-    "Foundry IQ (Azure AI Search)"
+    "Foundry IQ (Azure AI Search)",
+    "Application Insights",
+    "Azure Monitor Log Analytics"
   ],
-  "data_requirements": "No data required; provisioning only.",
-  "security_notes": "Public authenticated endpoints; backend local key authentication disabled. No service connections, runtime role assignments, key retrieval, or policy-bypass tags. GlobalStandard inference may process outside Sweden. Generated settings are ignored by Git.",
+  "data_requirements": "One harmless connectivity prompt with a unique test marker. No customer data, ingestion, or evaluation dataset.",
+  "security_notes": "Project managed identity is the permitted APIM caller; APIM uses account-scoped backend inference access and managed-identity telemetry ingestion. No API keys, policy bypass, or prompt/response body logging. Responses requires the applicable feature flight. GlobalStandard inference may process outside Sweden. Settings and test evidence are ignored by Git.",
   "setup_time_estimate": "5-10 minutes for local setup; Azure provisioning time varies, especially APIM.",
   "last_updated": "2026-11-23"
 }

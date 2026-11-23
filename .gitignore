@@ -32,6 +32,8 @@ demos/search02-hybrid-pagination/.venv-preview/
 .env
 .env.*
 !.env.example
+demos/byom01-capability-testing/env/gateway.json
+demos/byom01-capability-testing/env/test-evidence.json
 
 # IDE
 .vscode/

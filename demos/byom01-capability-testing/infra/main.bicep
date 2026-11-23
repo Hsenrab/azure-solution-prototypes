@@ -50,6 +50,9 @@ resource project 'Microsoft.CognitiveServices/accounts/projects@2026-09-01' = {
 resource apim 'Microsoft.ApiManagement/service@2024-05-01' = {
   name: apimName
   location: location
+  identity: {
+    type: 'SystemAssigned'
+  }
   sku: {
     name: 'Standard'
     capacity: 1
