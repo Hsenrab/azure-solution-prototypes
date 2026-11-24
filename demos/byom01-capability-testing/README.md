@@ -94,6 +94,7 @@ deploying. This is a prototype, not a production availability configuration.
 | [03_test.ipynb](./notebooks/03_test.ipynb) | Invoke the connected model through Foundry, save correlated gateway evidence, and clean up the test version/conversation |
 | [04_foundry_tools.ipynb](./notebooks/04_foundry_tools.ipynb) | Six non-LLM service SDK examples using the existing Foundry account; Document Intelligence is key-only |
 | [05_direct_api.ipynb](./notebooks/05_direct_api.ipynb) | Pure Responses calls through APIM/Foundry via OpenAI SDK or HTTPS, plus an Azure AI Projects SDK example |
+| [06_prompt_agent.ipynb](./notebooks/06_prompt_agent.ipynb) | Create a no-tool prompt agent on the connected model with pirate-style instructions |
 | [X_destroy.ipynb](./notebooks/X_destroy.ipynb) | Standard resource deletion and Cognitive Services purge |
 
 1. Open setup and run **Step 1**. Switch to **Python (byom01-capability-testing)**
@@ -159,6 +160,15 @@ inference. Missing or incomplete evidence is pending/unverified, not success.
 The agent/conversation remain available for inspection after invocation. Run
 **Clean Up Test Resources** when finished, including after a failed or interrupted
 invocation, and before creating another test.
+
+### Prompt agent example
+
+[06_prompt_agent.ipynb](./notebooks/06_prompt_agent.ipynb) is a focused prompt-agent
+example using the same connected model and generated `env/gateway.json` settings.
+It creates no tools or web-search capability, instructs the agent to speak like a
+pirate, and asks it to explain Azure AI Foundry. The notebook makes one paid
+Responses request and then deletes only its test conversation and agent version.
+It does not create another connection or modify the gateway.
 
 ### Foundry Tools examples
 
