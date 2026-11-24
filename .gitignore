@@ -55,6 +55,7 @@ demos/**/outputs/*.zip
 # Demo output data (regenerated when notebooks run; .gitkeep preserves folder)
 demos/**/outputs/*.json
 demos/**/outputs/*.jsonl
+demos/**/outputs/*.wav
 
 # search01-private-endpoints: NASA earth book PDFs downloaded by 03_configure.ipynb
 demos/search01-private-endpoints/data/nasa/
