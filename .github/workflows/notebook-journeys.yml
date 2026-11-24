@@ -41,14 +41,73 @@ jobs:
     needs: discover
     if: needs.discover.outputs.has_demos == 'true'
     runs-on: ubuntu-latest
+    environment: speech01-ci
+    timeout-minutes: 180
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_DEPLOYER_OBJECT_ID: ${{ vars.AZURE_DEPLOYER_OBJECT_ID }}
     strategy:
       fail-fast: false
       matrix:
         demo: ${{ fromJSON(needs.discover.outputs.demos) }}
     steps:
-      - name: Report selected demo
+      - uses: actions/checkout@v4.2.2
+
+      - name: Report unsupported demo
+        if: matrix.demo != 'speech01-foundry-speech'
         env:
           DEMO: ${{ matrix.demo }}
         run: |
-          printf 'Selected demo: %s\n' "$DEMO"
-          echo 'Selection only; no notebooks executed or Azure resources provisioned.'
+          printf 'Unsupported notebook journey: %s\n' "$DEMO"
+          {
+            echo "## Unsupported notebook journey"
+            echo
+            echo "The \`$DEMO\` journey is not enabled for hosted execution; it was not run and is not reported as passed."
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+      - name: Set up Python
+        if: matrix.demo == 'speech01-foundry-speech'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install notebook runner
+        if: matrix.demo == 'speech01-foundry-speech'
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "nbclient==0.11.0" "ipykernel==7.4.0" python-dotenv
+          python -m ipykernel install --user --name python3 --display-name "Python 3"
+
+      - name: Validate Azure OIDC configuration
+        if: matrix.demo == 'speech01-foundry-speech'
+        run: |
+          for name in AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID AZURE_DEPLOYER_OBJECT_ID; do
+            if [ -z "${!name}" ]; then
+              echo "Missing required speech01-ci environment variable: $name" >&2
+              echo "Configure the speech01-ci GitHub Environment before running this journey." >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+          done
+
+      - name: Sign in to Azure with OIDC
+        if: matrix.demo == 'speech01-foundry-speech'
+        id: azure_login
+        uses: azure/login@v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Execute speech01 notebook journey
+        if: matrix.demo == 'speech01-foundry-speech'
+        run: python .github/notebook-journeys/execute.py
+
+      - name: Retry and verify run-scoped cleanup
+        if: ${{ always() && matrix.demo == 'speech01-foundry-speech' && steps.azure_login.outcome == 'success' }}
+        run: python .github/notebook-journeys/execute.py --cleanup-only

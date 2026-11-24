@@ -18,6 +18,9 @@ param speechCallerPrincipalId string = ''
 @description('Optional principal object ID to grant blob upload permissions on the Function storage account for local package deployment. Leave empty to skip role assignment.')
 param deployerPrincipalId string = ''
 
+@description('Principal type for the deployer role assignment.')
+param deployerPrincipalType string = 'User'
+
 @description('Optional package URL for Linux Consumption deploy-from-URL flow. Leave empty to set later from Notebook 2.')
 param packageUri string = ''
 
@@ -32,6 +35,7 @@ var appInsightsName = take('appi-${normalizedDemoId}-${take(uniqueSuffix, 5)}', 
 var cognitiveServicesSpeechUserRoleDefinitionId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'f2dc8367-1007-4938-bd23-fe263f013447')
 var storageBlobDataOwnerRoleDefinitionId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b')
 var storageBlobDataContributorRoleDefinitionId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
+var monitoringReaderRoleDefinitionId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '43d0d8ad-25c7-4714-9337-8ba259a9fe05')
 
 resource aiServices 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
   name: accountName
@@ -186,7 +190,7 @@ resource deployerStorageBlobContributorRoleAssignment 'Microsoft.Authorization/r
   properties: {
     principalId: deployerPrincipalId
     roleDefinitionId: storageBlobDataContributorRoleDefinitionId
-    principalType: 'User'
+    principalType: deployerPrincipalType
   }
 }
 
@@ -197,6 +201,16 @@ resource speechCallerRoleAssignment 'Microsoft.Authorization/roleAssignments@202
     principalId: speechCallerPrincipalId
     roleDefinitionId: cognitiveServicesSpeechUserRoleDefinitionId
     principalType: 'ServicePrincipal'
+  }
+}
+
+resource deployerMonitoringReaderRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(deployerPrincipalId)) {
+  name: guid(appInsights.id, deployerPrincipalId, 'MonitoringReader')
+  scope: appInsights
+  properties: {
+    principalId: deployerPrincipalId
+    roleDefinitionId: monitoringReaderRoleDefinitionId
+    principalType: deployerPrincipalType
   }
 }
 
