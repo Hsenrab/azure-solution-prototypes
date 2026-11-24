@@ -1,0 +1,14 @@
+azure-identity>=1.17.0
+azure-mgmt-resource>=23.1.0,<24.0.0
+azure-mgmt-cognitiveservices>=13.5.0
+azure-ai-projects>=2.0.0,<3.0.0
+azure-monitor-query>=2.0.0,<3.0.0
+python-dotenv>=1.0.0
+openai>=3.0.0,<4.0.0
+httpx>=0.27.0,<1.0.0
+azure-cognitiveservices-speech>=1.53.1,<2.0.0
+azure-ai-translation-text>=2.0.0,<3.0.0
+azure-ai-textanalytics>=5.4.0,<6.0.0
+azure-ai-documentintelligence>=1.0.2,<2.0.0
+azure-ai-contentsafety>=1.0.0,<2.0.0
+azure-ai-contentunderstanding>=1.1.0,<2.0.0

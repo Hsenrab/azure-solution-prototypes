@@ -1,0 +1,25 @@
+{
+  "demo_name": "byom01-capability-testing",
+  "problem_statement": "Provisioned resources alone do not make a gateway-managed model usable from Foundry.",
+  "hypothesis": "An engineer can configure a project-scoped connected model using managed identities, invoke GPT-5.4 through APIM from Foundry, and correlate the response with successful gateway backend evidence.",
+  "customer_scenario": "Engineers testing Foundry connected models through APIM, six non-LLM Foundry Tools through dedicated SDKs on the existing account, and pure model calls via OpenAI SDK, HTTPS, or Azure AI Projects SDK. Tools cover Speech, NMT Translator, Language detection, Document Intelligence Read, Content Safety, and extraction-only Content Understanding. Tools live outputs are unverified; Document Intelligence is blocked on the current key-disabled deployment. All five direct examples retain recorded user-run Entra evidence; live API-key authentication was not tested.",
+  "status": "proposed",
+  "owner": "Prototype Team",
+  "technologies": [
+    "Python",
+    "Jupyter",
+    "Bicep"
+  ],
+  "azure_services": [
+    "Azure API Management",
+    "Microsoft Foundry",
+    "Foundry Tools (Speech, Translator, Language, Document Intelligence, Content Safety, Content Understanding)",
+    "Foundry IQ (Azure AI Search)",
+    "Application Insights",
+    "Azure Monitor Log Analytics"
+  ],
+  "data_requirements": "Harmless connectivity/poem prompts for model calls; short benign sentences and one public Azure sample PDF for Tools. Speech saves a local WAV; OCR input stays in memory. No customer data or evaluation dataset.",
+  "security_notes": "APIM retains tenant/audience validation and managed-identity backend/telemetry access. Deployment remains key-disabled. Dual-auth Tools accept only a native key for the configured consuming account or DefaultAzureCredential with service data-plane access; project-only access is insufficient. Document Intelligence uses Entra management access to retrieve an account key (Microsoft.CognitiveServices/accounts/listKeys/action), then key-only analysis, and remains blocked without a policy-compatible key-enabled account. No role changes, key enablement, policy bypass, persisted credentials, or body/token logging. Responses requires the applicable feature flight. GlobalStandard inference may process outside Sweden.",
+  "setup_time_estimate": "5-10 minutes for local setup; Azure provisioning time varies, especially APIM.",
+  "last_updated": "2026-11-24"
+}

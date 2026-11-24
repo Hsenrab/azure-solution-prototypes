@@ -1,0 +1,46 @@
+<policies>
+  <inbound>
+    <base />
+    <validate-azure-ad-token tenant-id="__TENANT_ID__" header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized" output-token-variable-name="validated-caller">
+      <audiences><audience>__TOKEN_AUDIENCE__</audience></audiences>
+      <required-claims><claim name="oid" match="any">__ALLOWED_CALLER_VALUES__</claim></required-claims>
+    </validate-azure-ad-token>
+    <set-variable name="requested-model" value='@(context.Request.Body.As&lt;JObject&gt;(preserveContent: true)["model"].ToString())' />
+    <choose>
+      <when condition='@((string)context.Variables["requested-model"] != "__DEPLOYMENT_NAME__")'>
+        <return-response>
+          <set-status code="400" reason="Unsupported model" />
+          <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
+          <set-body>{"error":{"message":"This API accepts only the configured GPT-5.4 deployment."}}</set-body>
+        </return-response>
+      </when>
+    </choose>
+    <set-variable name="test-id" value='@{
+      var body = context.Request.Body.As&lt;string&gt;(preserveContent: true);
+      var match = Regex.Match(body, @"byom01-test:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})", RegexOptions.IgnoreCase);
+      return match.Success ? match.Groups[1].Value.ToLowerInvariant() : "";
+    }' />
+    <set-backend-service backend-id="__BACKEND_NAME__" />
+    <authentication-managed-identity resource="__TOKEN_AUDIENCE__" />
+  </inbound>
+  <backend><forward-request /></backend>
+  <outbound>
+    <choose>
+      <when condition='@(!string.IsNullOrEmpty((string)context.Variables["test-id"]))'>
+        <trace source="byom01-gateway" severity="information">
+          <message>byom01-backend-result</message>
+          <metadata name="testId" value='@((string)context.Variables["test-id"])' />
+          <metadata name="requestId" value="@(context.RequestId.ToString())" />
+          <metadata name="apiId" value="__API_NAME__" />
+          <metadata name="backendResourceId" value="__BACKEND_RESOURCE_ID__" />
+          <metadata name="backendUrl" value="__BACKEND_URL__" />
+          <metadata name="deploymentName" value='@((string)context.Variables["requested-model"])' />
+          <metadata name="callerPrincipalId" value='@(((Jwt)context.Variables["validated-caller"]).Claims.GetValueOrDefault("oid", ""))' />
+          <metadata name="statusCode" value="@(context.Response.StatusCode.ToString())" />
+        </trace>
+      </when>
+    </choose>
+    <base />
+  </outbound>
+  <on-error><base /></on-error>
+</policies>

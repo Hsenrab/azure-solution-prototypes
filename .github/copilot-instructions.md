@@ -92,6 +92,14 @@ Before finalizing changes, verify and state:
   surfaces or other coding agents; keep the detailed procedure in its referenced
   source rather than duplicating it in prompts or commands.
 
+## Tooling and Validation
+- Once the user authorizes live validation, proceed with the agreed resources and paid SKUs without repeatedly requesting cost or deployment authorization.
+- Clean up resources created for validation, including applicable soft-delete purges, and verify cleanup. Explicitly report anything remaining; never delete unrelated or pre-existing resources. Preserve tool approval requirements and explicit subscription targeting.
+- Prefer built-in file, Bicep, and Pylance tools over equivalent terminal commands to reduce approval prompts.
+- Use the smallest existing validation that proves the change; avoid unnecessary custom Python validation scripts.
+- Use terminal commands when built-in tools cannot provide the required evidence, keeping approval-required commands separate. Never bypass approvals or broaden approval rules.
+- These rules govern agent tooling, not Python SDK usage inside demos.
+
 ## Communication
 - When referring to a notebook cell, never use cell numbers. Instead refer to it by its markdown heading (e.g. "the **Step 3** cell") or by what it does (e.g. "the Bicep deployment cell"). Cell numbers are invisible to users and change as cells are added or removed.
 - If inferred or previously requested constraints make a solution materially more complex, explicitly call that out before implementation and summarize the simpler alternative.
