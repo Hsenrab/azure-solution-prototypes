@@ -8,6 +8,9 @@ param backendDeploymentName string
 param backendModelVersion string
 param location string = resourceGroup().location
 
+@description('Optional tenant-local Entra user object ID for direct notebook calls; empty retains project-only access')
+param allowedUserObjectId string = ''
+
 var connectionName = 'byom01-gateway'
 var apiName = 'byom01-responses'
 var backendName = 'byom01-gpt54'
@@ -16,6 +19,10 @@ var tokenAudience = 'https://cognitiveservices.azure.com'
 var backendBaseUrl = uri(backendOpenAIEndpoint, 'openai/v1')
 var backendResourceId = resourceId(backendResourceGroup, 'Microsoft.CognitiveServices/accounts', backendAccountName)
 var metricsPublisherRoleId = '3913510d-42f4-4e42-8a64-420c390055eb'
+var allowedCallerIds = empty(allowedUserObjectId)
+  ? [project.identity.principalId]
+  : [project.identity.principalId, allowedUserObjectId]
+var allowedCallerValues = join(map(allowedCallerIds, callerId => '<value>${callerId}</value>'), '')
 var policyXml = replace(
   replace(
     replace(
@@ -24,7 +31,7 @@ var policyXml = replace(
           replace(
             replace(
               replace(loadTextContent('gateway-policy.xml'), '__TENANT_ID__', subscription().tenantId),
-              '__PROJECT_PRINCIPAL_ID__', project.identity.principalId),
+              '__ALLOWED_CALLER_VALUES__', allowedCallerValues),
             '__TOKEN_AUDIENCE__', tokenAudience),
           '__DEPLOYMENT_NAME__', backendDeploymentName),
         '__BACKEND_NAME__', backendName),
@@ -215,6 +222,8 @@ output backendUrl string = '${backendBaseUrl}/responses'
 output deploymentName string = backendDeploymentName
 output projectPrincipalId string = project.identity.principalId
 output apimPrincipalId string = apim.identity.principalId
+output allowedUserObjectId string = allowedUserObjectId
+output directTokenScope string = '${tokenAudience}/.default'
 output workspaceId string = workspace.properties.customerId
 output workspaceResourceId string = workspace.id
 output applicationInsightsResourceId string = insights.id

@@ -50,6 +50,7 @@ Provisioning the search resource does not create a retrieval flow.
 idle. Foundry uses S0; the backend deploys a pay-per-token model, but this
 deployment/configuration notebooks make no inference calls. The Test notebook
 makes one paid Foundry Responses request, and telemetry ingestion has usage charges.
+Each direct-model example in the API notebook makes one additional paid request.
 Check current
 [APIM pricing](https://azure.microsoft.com/pricing/details/api-management/) and
 [search pricing](https://azure.microsoft.com/pricing/details/search/), plus
@@ -86,6 +87,7 @@ deploying. This is a prototype, not a production availability configuration.
 | [01_deploy_infra.ipynb](./notebooks/01_deploy_infra.ipynb) | Check backend model/quota, compile both templates, deploy both groups via the Python SDK, generate local settings |
 | [02_configure.ipynb](./notebooks/02_configure.ipynb) | Configure the managed-identity route, scoped RBAC, connected model, and telemetry; generate gateway settings |
 | [03_test.ipynb](./notebooks/03_test.ipynb) | Invoke the connected model through Foundry, save correlated gateway evidence, and clean up the test version/conversation |
+| [04_direct_api.ipynb](./notebooks/04_direct_api.ipynb) | Pure Responses calls through APIM/Foundry via OpenAI SDK or HTTPS, plus an Azure AI Projects SDK example |
 | [X_destroy.ipynb](./notebooks/X_destroy.ipynb) | Standard resource deletion and Cognitive Services purge |
 
 1. Open setup and run **Step 1**. Switch to **Python (byom01-capability-testing)**
@@ -126,9 +128,10 @@ deployment results. Then run Configure and Test.
 
 ## Generated configuration and verification
 
-[.env.example](./env/.env.example) lists the 25 fields generated
-from deployment outputs. Do not fill it in or manually author `env/.env`.
-The generated file is ignored by Git and contains no API keys.
+[.env.example](./env/.env.example) lists deployment-generated fields and the
+direct-client settings. The resource journey generates its base `env/.env`;
+do not manually populate its resource IDs/endpoints. The direct-client exception
+below also permits equivalent external settings. Real `.env` files remain ignored.
 
 After deployment, check the consumer SKUs, public network settings, and Foundry
 child project. In the backend group, verify the second account is in Sweden
@@ -149,8 +152,9 @@ Local validation and optional live acceptance are described in the
 Configure generates ignored `env/gateway.json` containing connection/model/gateway
 identifiers, workspace ID, and project context. Do not edit it manually.
 The route is OpenAI v1 Responses, with no deployment path or `api-version`.
-APIM accepts only the consuming project's Entra identity and the configured
-deployment, then authenticates to the fixed backend using its own identity.
+APIM accepts the consuming project's Entra identity and, when explicitly configured,
+one additional Entra user, for the configured deployment. It authenticates to the
+fixed backend using its own identity and traces the actual validated caller.
 No subscription key or backend key is used.
 
 Test creates a unique no-tool prompt agent referencing
@@ -172,6 +176,107 @@ The connection uses the supported `ProjectManagedIdentity` value omitted from
 published Bicep types. One documented, field-specific `BCP036` accommodation is
 used; unrelated diagnostics remain enabled. Source verification does not prove
 deployment, feature availability, or inference in this subscription.
+
+### Direct model API examples
+
+[04_direct_api.ipynb](./notebooks/04_direct_api.ipynb) contains independent **APIM via
+SDK**, **APIM via HTTPS**, **Foundry via OpenAI SDK**, **Foundry via HTTPS**, and
+**Foundry via Azure AI Projects SDK** poem examples.
+Each makes one pure Responses model request, with no agent or conversation lifecycle.
+Run only the selected endpoint's settings/authentication and chosen request cells;
+every request cell makes an additional paid request. No retries or alternate
+authentication after failure. Recorded user-run outputs show completed poems and
+response IDs with Entra authentication for all five examples, including the
+Azure AI Projects SDK against the consuming Foundry project. These runs precede
+the custom-key header correction; the Entra request path is unchanged. Other
+endpoint/model or authentication combinations, including live API-key calls,
+are not established by those runs.
+The [verification record](../../specs/007-byom-direct-api/tasks.md) retains the
+results; notebook outputs are removed by the normal pre-commit cleanup.
+
+**Authentication convention for new BYOM notebooks:** from this notebook onward,
+read endpoint-specific settings from `env/.env`. Use a nonempty configured API key
+when present; otherwise use `DefaultAzureCredential` with the endpoint's token
+scope. SDK and HTTPS examples use the same selection and print `Using API key` or
+`Using Microsoft Entra ID (DefaultAzureCredential)` before each request, without
+printing credentials. Failures do not trigger a retry with another method.
+When a custom key header is configured, SDK and HTTPS requests send that header
+without an additional Authorization bearer header. SDK examples omit Authorization
+on the request so the SDK recognizes the deliberate override.
+Keys apply only to APIs that support them; Azure deployment, RBAC, and resource
+cleanup still require Entra. Earlier notebooks are unchanged by this convention,
+and this deployment's gateway remains Entra-only.
+
+For **this repo's deployment**, set `APIM_ALLOWED_USER_OBJECT_ID` in `env/.env` to
+your user object ID in the deployment tenant. Confirm your tenant, then obtain the
+ID with `az ad signed-in-user show --query id -o tsv`. This is a configuration input,
+not a secret. Rerun Configure from **Load Deployment Settings** through **Write
+Gateway Settings** to deploy the Bicep allowlist and generate `APIM_BASE_URL`,
+`APIM_MODEL_NAME`, and `APIM_TOKEN_SCOPE` from successful outputs. The write step
+preserves unrelated `.env` fields, comments, and API keys. An empty user ID keeps
+project-only access and cannot authorize direct user calls.
+
+The new notebook uses **DefaultAzureCredential**, which must select that permitted
+user. Existing environment/service-principal credentials may select another caller;
+they are not automatically authorized. No user lookup, role grant, backend key
+enabling, or policy patch occurs in the inference notebook. The gateway still
+validates tenant and audience, and the original project caller stays permitted.
+Re-running deployment's **Write env/.env** overwrites the base file: retain your
+user-ID setting before doing so and rerun Configure afterward.
+
+For an **external gateway**, supply `APIM_BASE_URL` (complete HTTPS OpenAI v1 route,
+not ending in `/responses`) and `APIM_MODEL_NAME` directly in `env/.env`; no repo
+deployment is required. A nonempty `APIM_API_KEY` selects key mode, optionally with
+`APIM_API_KEY_HEADER` for an endpoint expecting `Ocp-Apim-Subscription-Key` or
+`api-key`. Without a key, supply the endpoint's `APIM_TOKEN_SCOPE` for Entra.
+The external endpoint must already support Responses and authorize that credential.
+An APIM subscription key alone does not bypass an independent JWT policy.
+Do not set a key for this repo's Entra-only gateway. Never commit or print keys.
+
+For the **Foundry Responses examples**, Configure's **Write Gateway Settings**
+generates `FOUNDRY_BASE_URL` from the consuming project endpoint, appending
+`/openai/v1/`, plus `FOUNDRY_MODEL_NAME` from the registered connected-model
+reference and `FOUNDRY_TOKEN_SCOPE=https://ai.azure.com/.default` in `env/.env`.
+If Configure's successful readback is still available in the kernel, rerun only
+**Write Gateway Settings**; generating these fields requires no redeployment.
+It updates only the APIM/Foundry URL/model/scope fields, preserving keys and
+unrelated settings.
+
+External users may instead supply equivalent settings documented in
+[.env.example](./env/.env.example), with either an API key or token scope. Use the
+complete consuming resource or project OpenAI v1 base URL, not the backend
+resource; rerunning Configure replaces the direct URL/model/scope fields with
+this deployment's values. The model reference, for example
+`byom01-gateway/gpt-5.4`, is passed unchanged. Foundry authentication is independent
+of APIM authentication. The documented Foundry v1 token scope is
+`https://ai.azure.com/.default`; do not assume APIM's scope applies. An optional
+`FOUNDRY_API_KEY_HEADER` selects a custom key header. Leave keys empty for Entra-only
+deployments.
+
+The **Azure AI Projects SDK** example uses the existing
+`AZURE_AI_PROJECT_ENDPOINT` file setting, without `/openai/v1/`, instead of
+`FOUNDRY_BASE_URL`. Deployment already generates this field; external users can
+supply their consuming project endpoint directly. `AIProjectClient` creates the
+OpenAI client through `get_openai_client()` without querying the project or
+creating an agent. Its required TokenCredential is supplied with
+DefaultAzureCredential, while the documented `api_key` override reuses the
+selected key or token provider for the model request. This does not give API keys
+access to project-management operations or acquire an additional Entra token in
+key mode. No new dependency is required.
+
+The [documented endpoint shapes](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/model-router-apis#choose-an-endpoint)
+and a portal Chat Completions example do not prove that the supplied connected-model
+name resolves through Responses. Only a successful invocation verifies the tested
+endpoint/model combination; a resource-endpoint result does not verify the project
+endpoint. Errors propagate without agent, backend, or APIM fallback. These examples
+make no changes to gateway routes, connection scope, authentication policies, or keys.
+The recorded user-run project examples establish that tested Responses combination,
+not independent gateway telemetry verification or support for arbitrary endpoints.
+
+Run setup's **Step 3** to install the explicit OpenAI and HTTPX dependencies. Read
+the chosen endpoint's settings/authentication first, then select its request example. Responses may
+be stored under the endpoint's existing policy; the notebook makes no retention
+changes. No new Azure resources are needed for direct calls.
 
 ## Cleanup
 

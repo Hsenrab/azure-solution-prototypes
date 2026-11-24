@@ -2,7 +2,7 @@
   "demo_name": "byom01-capability-testing",
   "problem_statement": "Provisioned resources alone do not make a gateway-managed model usable from Foundry.",
   "hypothesis": "An engineer can configure a project-scoped connected model using managed identities, invoke GPT-5.4 through APIM from Foundry, and correlate the response with successful gateway backend evidence.",
-  "customer_scenario": "Engineers testing Foundry connected models through an existing API Management gateway, with a backend project for Foundry portal navigation.",
+  "customer_scenario": "Engineers testing Foundry connected models through APIM and pure model calls via OpenAI SDK, HTTPS, or Azure AI Projects SDK using file-supplied settings. All five direct examples have recorded user-run Entra evidence; key handling, settings preservation, and retained project access were source-reviewed. Live API-key authentication was not tested.",
   "status": "proposed",
   "owner": "Prototype Team",
   "technologies": [
@@ -17,8 +17,8 @@
     "Application Insights",
     "Azure Monitor Log Analytics"
   ],
-  "data_requirements": "One harmless connectivity prompt with a unique test marker. No customer data, ingestion, or evaluation dataset.",
-  "security_notes": "Project managed identity is the permitted APIM caller; APIM uses account-scoped backend inference access and managed-identity telemetry ingestion. No API keys, policy bypass, or prompt/response body logging. Responses requires the applicable feature flight. GlobalStandard inference may process outside Sweden. Settings and test evidence are ignored by Git.",
+  "data_requirements": "A harmless connectivity prompt with a unique marker for the gateway test, or an original short poem prompt for each chosen direct API example. No customer data or evaluation dataset.",
+  "security_notes": "APIM permits the project identity and an optional explicit Entra user, retaining tenant/audience validation and managed-identity backend/telemetry access. This deployment remains key-free; the direct client can read an external gateway key from ignored .env settings. No policy bypass or body/token logging. Responses requires the applicable feature flight. GlobalStandard inference may process outside Sweden.",
   "setup_time_estimate": "5-10 minutes for local setup; Azure provisioning time varies, especially APIM.",
-  "last_updated": "2026-11-23"
+  "last_updated": "2026-11-24"
 }

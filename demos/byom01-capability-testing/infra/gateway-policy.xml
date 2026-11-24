@@ -1,9 +1,9 @@
 <policies>
   <inbound>
     <base />
-    <validate-azure-ad-token tenant-id="__TENANT_ID__" header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized">
+    <validate-azure-ad-token tenant-id="__TENANT_ID__" header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized" output-token-variable-name="validated-caller">
       <audiences><audience>__TOKEN_AUDIENCE__</audience></audiences>
-      <required-claims><claim name="oid" match="all"><value>__PROJECT_PRINCIPAL_ID__</value></claim></required-claims>
+      <required-claims><claim name="oid" match="any">__ALLOWED_CALLER_VALUES__</claim></required-claims>
     </validate-azure-ad-token>
     <set-variable name="requested-model" value='@(context.Request.Body.As&lt;JObject&gt;(preserveContent: true)["model"].ToString())' />
     <choose>
@@ -35,7 +35,7 @@
           <metadata name="backendResourceId" value="__BACKEND_RESOURCE_ID__" />
           <metadata name="backendUrl" value="__BACKEND_URL__" />
           <metadata name="deploymentName" value='@((string)context.Variables["requested-model"])' />
-          <metadata name="callerPrincipalId" value="__PROJECT_PRINCIPAL_ID__" />
+          <metadata name="callerPrincipalId" value='@(((Jwt)context.Variables["validated-caller"]).Claims.GetValueOrDefault("oid", ""))' />
           <metadata name="statusCode" value="@(context.Response.StatusCode.ToString())" />
         </trace>
       </when>
