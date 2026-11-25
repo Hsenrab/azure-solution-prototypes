@@ -95,6 +95,7 @@ deploying. This is a prototype, not a production availability configuration.
 | [04_foundry_tools.ipynb](./notebooks/04_foundry_tools.ipynb) | Six non-LLM service SDK examples using the existing Foundry account; Document Intelligence is key-only |
 | [05_direct_api.ipynb](./notebooks/05_direct_api.ipynb) | Pure Responses calls through APIM/Foundry via OpenAI SDK or HTTPS, plus an Azure AI Projects SDK example |
 | [06_prompt_agent.ipynb](./notebooks/06_prompt_agent.ipynb) | Create a no-tool prompt agent on the connected model with pirate-style instructions |
+| [07_toolbox_agent.ipynb](./notebooks/07_toolbox_agent.ipynb) | Give the pirate agent file search (town documents in `data/brackenford/`) and code interpreter, directly (tool agent) and through a toolbox (toolbox agent, which fails intermittently in preview) |
 | [X_destroy.ipynb](./notebooks/X_destroy.ipynb) | Standard resource deletion and Cognitive Services purge |
 
 1. Open setup and run **Step 1**. Switch to **Python (byom01-capability-testing)**

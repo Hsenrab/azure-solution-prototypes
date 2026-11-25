@@ -38,16 +38,6 @@ var policyXml = replace(
       '__API_NAME__', apiName),
     '__BACKEND_RESOURCE_ID__', backendResourceId),
   '__BACKEND_URL__', '${backendBaseUrl}/responses')
-var messageDiagnostics = {
-  request: {
-    body: { bytes: 0 }
-    headers: []
-  }
-  response: {
-    body: { bytes: 0 }
-    headers: []
-  }
-}
 
 resource foundry 'Microsoft.CognitiveServices/accounts@2026-09-01' existing = {
   name: foundryAccountName
@@ -104,19 +94,39 @@ resource telemetryAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' = 
   }
 }
 
-resource logger 'Microsoft.ApiManagement/service/loggers@2024-05-01' = {
-  parent: apim
-  name: 'byom01-insights'
+resource projectTelemetryAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: insights
+  name: guid(insights.id, project.id, metricsPublisherRoleId)
   properties: {
-    loggerType: 'applicationInsights'
-    resourceId: insights.id
-    credentials: {
-      connectionString: insights.properties.ConnectionString
-      identityClientId: 'SystemAssigned'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', metricsPublisherRoleId)
+    principalId: project.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// Links Application Insights to the Foundry project so agent runs appear under Tracing.
+resource tracingConnection 'Microsoft.CognitiveServices/accounts/projects/connections@2026-09-01' = {
+  parent: project
+  name: 'byom01-tracing'
+  properties: {
+    category: 'AppInsights'
+    target: insights.id
+    // Published Bicep types lag the runtime contract used by Microsoft's Foundry samples.
+    #disable-next-line BCP036
+    authType: 'ProjectManagedIdentity'
+    isSharedToAll: false
+    metadata: {
+      ApiType: 'Azure'
+      ResourceId: insights.id
+      ApplicationInsightsConnectionString: insights.properties.ConnectionString
     }
   }
-  dependsOn: [telemetryAccess]
+  dependsOn: [projectTelemetryAccess]
 }
+
+// Temporarily removed: the APIM logger and API diagnostic fail to create with
+// "System-Assigned Managed Identity is required ... not enabled" (platform regression since 2026-11-21).
+// Restore the logger (identityClientId 'SystemAssigned') and diagnostic once the platform issue is resolved.
 
 resource backend 'Microsoft.ApiManagement/service/backends@2024-05-01' = {
   parent: apim
@@ -163,22 +173,6 @@ resource policy 'Microsoft.ApiManagement/service/apis/policies@2024-05-01' = {
   dependsOn: [backend, backendAccess, operation]
 }
 
-resource diagnostics 'Microsoft.ApiManagement/service/apis/diagnostics@2024-05-01' = {
-  parent: api
-  name: 'applicationinsights'
-  properties: {
-    loggerId: logger.id
-    alwaysLog: 'allErrors'
-    sampling: { samplingType: 'fixed', percentage: 100 }
-    verbosity: 'information'
-    frontend: messageDiagnostics
-    backend: messageDiagnostics
-    logClientIp: false
-    metrics: false
-    httpCorrelationProtocol: 'W3C'
-  }
-}
-
 resource connection 'Microsoft.CognitiveServices/accounts/projects/connections@2026-09-01' = {
   parent: project
   name: connectionName
@@ -209,7 +203,7 @@ resource connection 'Microsoft.CognitiveServices/accounts/projects/connections@2
       ])
     }
   }
-  dependsOn: [policy, diagnostics]
+  dependsOn: [policy]
 }
 
 output connectionName string = connection.name
